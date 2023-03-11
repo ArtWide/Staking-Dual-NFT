@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: BSL 1.1
+// SPDX-License-Identifier: UNLICENSED
 
 /* 
-*This code is subject to the Business Source License version 1.1
+*This code is subject to the Copyright License
 * Copyright (c) 2023 Sevenlinelabs
-* All rights reserved
+* All rights reserved.
 */
 pragma solidity ^0.8.17;
 import "./Base/NTS-UserManager.sol";

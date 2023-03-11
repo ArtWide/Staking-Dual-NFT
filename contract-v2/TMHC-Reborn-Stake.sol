@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: BSL 1.1
+// SPDX-License-Identifier: UNLICENSED
 
 /* 
-*This code is subject to the Business Source License version 1.1
+*This code is subject to the Copyright License
 * Copyright (c) 2023 Sevenlinelabs
-* All rights reserved
+* All rights reserved.
 */
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -11,8 +11,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@thirdweb-dev/contracts/token/TokenERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./NTS-Multi.sol";
-import "./NTS-UserManager.sol";
+import "./module/NTS-Multi.sol";
+import "./module/NTS-UserManager.sol";
 
 contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
