@@ -35,7 +35,7 @@ contract NTStakeMulti is NTStakeSingle {
     /*///////////////////////////////////////////////////////////////
                 Team Stake / Rewards / unStake cycle
     //////////////////////////////////////////////////////////////*/
-    function _stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) public {
+    function _stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) internal {
         // 리더의 오너 및 스테이킹 여부를 확인합니다.
         require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
         require(inStakedtmhc[_leaderId].stakeowner != msg.sender, "TMHC already staked.");
@@ -188,12 +188,17 @@ contract NTStakeMulti is NTStakeSingle {
     function _claimTeam(uint16 _leaderId) internal {
         // 팀 리워드 계산
         uint256 _myReward = calRewardTeam(_leaderId);
+        if(_myReward == 0){
+            return;
+        }else{
         // 리워드 민팅팅
-        rewardToken.mintTo(msg.sender, _myReward);
-        // 팀 블록타임 갱신
-        inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
-        // 보상이 지급되었음을 나타내는 이벤트 발생
-        emit RewardPaid(msg.sender, _myReward);
+            rewardToken.mintTo(msg.sender, _myReward);
+            // 팀 블록타임 갱신
+            inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
+            // 보상이 지급되었음을 나타내는 이벤트 발생
+            emit RewardPaid(msg.sender, _myReward);
+        }
+
     }
 
     function _claimTeamAll() internal {
@@ -210,36 +215,54 @@ contract NTStakeMulti is NTStakeSingle {
         emit RewardPaid(msg.sender, _myReward);
     }
 
-    function _unStakeTeam(uint16[] calldata _leaderIds) internal {
+    function _unStakeTeam(uint16 _leaderId) internal {
+        // 토큰의 소유자 여부, 이미 스테이킹 여부를 확인합니다.
+        require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
+        require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
+        require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
+        // 팀 리워드 계산
+        uint256 _myReward = calRewardTeam(_leaderId);
+        // 리워드 민팅팅
+        rewardToken.mintTo(msg.sender, _myReward);
+        // 보상이 지급되었음을 나타내는 이벤트 발생
+        emit RewardPaid(msg.sender, _myReward);
+
+        //사용자 정보에서 스테이킹 팀 삭제
+        uint16[] memory _array = users[msg.sender].stakedteam;
+        for (uint ii = 0; ii < _array.length; ii++) {
+            if (_array[ii] == _leaderId) {
+                users[msg.sender].stakedteam[ii] = _array[_array.length - 1];
+                users[msg.sender].stakedteam.pop();
+                break;
+            }
+        }
+
+        _unsetAllBoost(_leaderId);
+        //사용자의 팀이 더이상 없을경우 스테이킹 사용자 삭제
+        procDelUser();
+        // 이벤트 로그 처리
+        emit unStakedTeam(msg.sender, _leaderId);
+    }
+
+    function _unStakeTeamBatch(uint16[] calldata _leaderIds) internal {
         for(uint16 i = 0; i < _leaderIds.length; i++){
             uint16 _leaderId = _leaderIds[i];
-            // 토큰의 소유자 여부, 이미 스테이킹 여부를 확인합니다.
-            require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
-            require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
-            require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
-            // 팀 리워드 계산
-            uint256 _myReward = calRewardTeam(_leaderId);
-            // 리워드 민팅팅
-            rewardToken.mintTo(msg.sender, _myReward);
-            // 보상이 지급되었음을 나타내는 이벤트 발생
-            emit RewardPaid(msg.sender, _myReward);
-
-            //사용자 정보에서 스테이킹 팀 삭제
-            uint16[] memory _array = users[msg.sender].stakedteam;
-            for (uint ii = 0; ii < _array.length; ii++) {
-                if (_array[ii] == _leaderId) {
-                    users[msg.sender].stakedteam[ii] = _array[_array.length - 1];
-                    users[msg.sender].stakedteam.pop();
-                    break;
-                }
-            }
-
-            _unsetAllBoost(_leaderId);
-            //사용자의 팀이 더이상 없을경우 스테이킹 사용자 삭제
-            procDelUser();
-            // 이벤트 로그 처리
-            emit unStakedTeam(msg.sender, _leaderId);
+            _unStakeTeam(_leaderId);
         }
+    }
+
+    function _editStakeTeam(uint16 _leaderId, uint16[] calldata _newBoostIds) internal {
+        require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
+        require(inStakedtmhc[_leaderId].staketeam == _leaderId, "Stake team not match");
+        require(_newBoostIds.length <= 5, "A maximum of 5 booster NFTs are available.");
+        require(calRewardTeam(_leaderId) > 0, "Booster is not in the team.");
+        //리워드 수령
+        _claimTeam(_leaderId);
+        //모든 부스트의 해제
+        _unsetAllBoost(_leaderId);
+        //새로운 부스트로 교체
+        StakeTeam memory newTeam = StakeTeam(msg.sender, _newBoostIds, block.timestamp);
+        inStakedteam[_leaderId] = newTeam;        
     }
 
     

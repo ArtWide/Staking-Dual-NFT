@@ -82,8 +82,16 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
         _claimTeamAll();
     }
 
-    function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
-        _unStakeTeam(_leaderIds);
+    function unStakeTeam(uint16 _leaderId) external nonReentrant{
+        _unStakeTeam(_leaderId);
+    }
+
+    function unStakeTeamBatch(uint16[] calldata _leaderIds) external nonReentrant {
+        _unStakeTeamBatch(_leaderIds);
+    }
+
+    function editStakeTeam(uint16 _leaderId, uint16[] calldata _newBoostIds) external nonReentrant {
+        _editStakeTeam(_leaderId, _newBoostIds);
     }
 
     /*///////////////////////////////////////////////////////////////
