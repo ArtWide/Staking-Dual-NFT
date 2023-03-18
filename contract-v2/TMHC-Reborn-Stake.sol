@@ -82,29 +82,21 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
         _claimTeamAll();
     }
 
-    function unStakeTeam(uint16 _leaderId) external nonReentrant{
-        _unStakeTeam(_leaderId);
-    }
-
-    function unStakeTeamBatch(uint16[] calldata _leaderIds) external nonReentrant {
-        _unStakeTeamBatch(_leaderIds);
-    }
-
-    function editStakeTeam(uint16 _leaderId, uint16[] calldata _newBoostIds) external nonReentrant {
-        _editStakeTeam(_leaderId, _newBoostIds);
+    function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
+        _unStakeTeam(_leaderIds);
     }
 
     /*///////////////////////////////////////////////////////////////
                             Admin Function
     //////////////////////////////////////////////////////////////*/
-    function setAddMomoGrades(uint8[] calldata _momogrades) public {
+    function setAddMomoGrades(uint8[] calldata _momogrades) external {
         require(msg.sender == owner, "Not owner");
         for(uint256 i = 0; i < _momogrades.length; i++){
             momoGrades.push(_momogrades[i]);
         }
     }
 
-    function setGradesBonus(uint8[10] calldata _gradesbonus) public {
+    function setGradesBonus(uint8[10] calldata _gradesbonus) external {
         require(msg.sender == owner, "Not owner");
         gradesBonus = _gradesbonus;
     }
