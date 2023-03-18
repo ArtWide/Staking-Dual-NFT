@@ -8,7 +8,7 @@
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@thirdweb-dev/contracts/token/TokenERC20.sol";
+import "./RewardVault.sol";
 
 contract NTSBase {
     // Staking target ERC1155 NFT contract - TMHC
@@ -16,7 +16,7 @@ contract NTSBase {
     // Staking target ERC721 NFT contract - MOMO
     IERC721 public momoToken;
     // Reward ERC20 Token contract
-    TokenERC20 public rewardToken;
+    NTSRewardVault public rewardVault;
     // Reward per each block (for eth, about 13~15 sec)
     uint256 public rewardPerHour;    
 

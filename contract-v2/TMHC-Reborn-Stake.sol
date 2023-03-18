@@ -8,11 +8,11 @@
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@thirdweb-dev/contracts/token/TokenERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./module/NTS-Multi.sol";
 import "./module/NTS-UserManager.sol";
+import "./module/RewardVault.sol";
 
 contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
@@ -21,11 +21,11 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
     bool public PauseStake;
     // Staking user array for cms.
 
-    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, TokenERC20 _rewardToken, uint256 _rewardPerHour, address _owner) {
+    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, uint256 _rewardPerHour, address _owner) {
         owner = _owner;
         tmhcToken = _EditionToken;
         momoToken = _NFTtoken;
-        rewardToken = _rewardToken;
+        rewardVault = _RewardVault;
         rewardPerHour = _rewardPerHour;
     }
 
@@ -35,6 +35,7 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
     function getStakedTMHC() public view returns(uint16[] memory stakedIds){
         return users[msg.sender].stakedtmhc;
     }
+
 
     function getStakedMOMO() public view returns(uint16[] memory stakedIds){
         return users[msg.sender].stakedmomo;
@@ -67,6 +68,14 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
         _unStake(_tokenType, _tokenIds);
     }
 
+    function calReward(uint _tokenType, uint16 _tokenId) external view returns(uint256 _Rawrd){
+        return _calReward(_tokenType, _tokenId);
+    }
+
+    function calRewardAll() external view returns(uint256 _Reward){
+        return _calRewardAll();
+    }
+
     /*///////////////////////////////////////////////////////////////
                          Multi Stake Interface
     //////////////////////////////////////////////////////////////*/
@@ -84,6 +93,18 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
 
     function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
         _unStakeTeam(_leaderIds);
+    }
+
+    function calRewardTeam(uint16 _staketeam) external view returns(uint256 _TotalReward){
+        return _calRewardTeam(_staketeam);
+    }
+
+    function calRewardTeamAll() external view returns (uint256 _TotalReward){
+        return _calRewardTeamAll();
+    }
+
+    function calBoostRate(uint16 _staketeam) external view returns(uint256 _boostrate){
+        return _calBoostRate(_staketeam);
     }
 
     /*///////////////////////////////////////////////////////////////

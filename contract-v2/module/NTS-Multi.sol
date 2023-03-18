@@ -8,7 +8,6 @@
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@thirdweb-dev/contracts/token/TokenERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./NTS-Single.sol";
@@ -69,7 +68,7 @@ contract NTStakeMulti is NTStakeSingle {
         emit StakedTeam(msg.sender, _leaderId, _boostIds);
     }
 
-    function calRewardTeam(uint16 _staketeam) public view returns (uint256 _Reward){
+    function _calRewardTeam(uint16 _staketeam) internal view returns (uint256 _Reward){
         // Team staking status check
         if(inStakedteam[_staketeam].stakeowner != msg.sender){
             return 0;
@@ -92,16 +91,16 @@ contract NTStakeMulti is NTStakeSingle {
         return _totlaReward;
     }
 
-    function calRewardTeamAll() public view returns(uint256 _TotalReward){
+    function _calRewardTeamAll() internal view returns(uint256 _TotalReward){
         uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
         uint256 _totalReward = 0;
         for(uint16 i = 0; i < _myStakeTeam.length; i++){
-            _totalReward = _totalReward + calRewardTeam(_myStakeTeam[i]);
+            _totalReward = _totalReward + _calRewardTeam(_myStakeTeam[i]);
         }
         return _totalReward;
     }
 
-    function calBoostRate(uint16 _staketeam) public view returns(uint256 _boostrate){
+    function _calBoostRate(uint16 _staketeam) internal view returns(uint256 _boostrate){
         // Team staking status check
         if(inStakedteam[_staketeam].stakeowner != msg.sender){
             return 0;
@@ -187,9 +186,9 @@ contract NTStakeMulti is NTStakeSingle {
 
     function _claimTeam(uint16 _leaderId) internal {
         // 팀 리워드 계산
-        uint256 _myReward = calRewardTeam(_leaderId);
+        uint256 _myReward = _calRewardTeam(_leaderId);
         // 리워드 민팅팅
-        rewardToken.mintTo(msg.sender, _myReward);
+        rewardVault.transferToken(msg.sender, _myReward);
         // 팀 블록타임 갱신
         inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
         // 보상이 지급되었음을 나타내는 이벤트 발생
@@ -198,9 +197,9 @@ contract NTStakeMulti is NTStakeSingle {
 
     function _claimTeamAll() internal {
         // 전체 리워드를 계산하여 받아옵니다.
-        uint256 _myReward = calRewardTeamAll();
+        uint256 _myReward = _calRewardTeamAll();
         // ERC-20 토큰 발행 함수로 교체
-        rewardToken.mintTo(msg.sender, _myReward); 
+        rewardVault.transferToken(msg.sender, _myReward); 
         // 팀 블록체인 타임 갱신
         uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
         for(uint16 i = 0; i < _myStakeTeam.length; i++){
@@ -218,9 +217,9 @@ contract NTStakeMulti is NTStakeSingle {
             require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
             require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
             // 팀 리워드 계산
-            uint256 _myReward = calRewardTeam(_leaderId);
+            uint256 _myReward = _calRewardTeam(_leaderId);
             // 리워드 민팅팅
-            rewardToken.mintTo(msg.sender, _myReward);
+            rewardVault.transferToken(msg.sender, _myReward);
             // 보상이 지급되었음을 나타내는 이벤트 발생
             emit RewardPaid(msg.sender, _myReward);
 

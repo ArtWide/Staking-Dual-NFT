@@ -8,10 +8,9 @@
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@thirdweb-dev/contracts/token/TokenERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./NTS-UserManager.sol"; 
+import "./NTS-UserManager.sol";
 import "./NTS-Base.sol";
 
 contract NTStakeSingle is NTSUserManager, NTSBase {
@@ -77,7 +76,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         emit Staked(msg.sender, _tokenType, _tokenIds);    // 스테이킹 이벤트를 발생시킴
     }
     // Step2. Calculation reward
-    function calReward(uint _tokenType, uint16 _tokenId) public view returns (uint256 _Reward){
+    function _calReward(uint _tokenType, uint16 _tokenId) public view returns (uint256 _Reward){
         // tokenType에 따라 0은 TMHC, 1은 MOMO를 나타냅니다.
         uint256 _stakeTime = 0;
         if(_tokenType==0)
@@ -101,28 +100,28 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         return ((_stakeTime * rewardPerHour) / 3600);
     }
     // Step2. Clculation rewalrd all stake
-    function calRewardAll() public view returns(uint256 _Reward){
+    function _calRewardAll() public view returns(uint256 _Reward){
         uint16[] memory _sktaedtmhc = users[msg.sender].stakedtmhc;
         uint16[] memory _stakedmomo = users[msg.sender].stakedmomo;
         uint256 _totalReward = 0;
 
         for (uint16 i = 0; i < _sktaedtmhc.length; i++){
             uint16 _tokenId = _sktaedtmhc[i];
-            _totalReward = _totalReward + calReward(0, _tokenId);
+            _totalReward = _totalReward + _calReward(0, _tokenId);
         }
 
         for (uint16 i = 0; i < _stakedmomo.length; i++){
             uint16 _tokenId = _stakedmomo[i];
-            _totalReward = _totalReward + calReward(1, _tokenId);
+            _totalReward = _totalReward + _calReward(1, _tokenId);
         }
         return _totalReward;
     }
     // Step4. Claim reward
     function _claim(uint _tokenType, uint16 _tokenId) internal {
         // 전체 리워드를 계산하여 받아옵니다.
-        uint256 _myReward = calReward(_tokenType, _tokenId);
+        uint256 _myReward = _calReward(_tokenType, _tokenId);
         // ERC-20 토큰 발행 함수로 교체
-        rewardToken.mintTo(msg.sender, _myReward);
+        rewardVault.transferToken(msg.sender, _myReward);
         // 블록타임 초기화
         if(_tokenType==0){
             inStakedtmhc[_tokenId].lastUpdateBlock = block.timestamp;
@@ -137,7 +136,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     // Step4. Claim reward all stake
     function _claimAll() internal {
         // 전체 리워드를 계산하여 받아옵니다.
-        uint256 _myReward = calRewardAll();
+        uint256 _myReward = _calRewardAll();
         // 블록타임 초기화
         uint16[] memory _stakedtmhc = users[msg.sender].stakedtmhc;
         uint16[] memory _stakedmomo = users[msg.sender].stakedmomo;
@@ -152,7 +151,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         }
 
         // ERC-20 토큰 발행 함수로 교체
-        rewardToken.mintTo(msg.sender, _myReward); 
+        rewardVault.transferToken(msg.sender, _myReward); 
         // 사용자 리워드 지급 정보 저장
         users[msg.sender].rewardsEarned += _myReward;
         // 보상이 지급되었음을 나타내는 이벤트 발생
