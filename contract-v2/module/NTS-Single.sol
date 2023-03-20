@@ -38,7 +38,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     //Step1. Start single staking
     function _stake(uint _tokenType, uint16[] calldata _tokenIds) internal {
         // tokenType에 따라 0은 TMHC, 1은 MOMO를 나타냅니다.
-        require(_tokenType == 1 || _tokenType == 2, "Invalid tokentype.");
+        require(_tokenType == 0 || _tokenType == 1, "Invalid tokentype.");
         if(_tokenType==0)
         {
             for (uint16 i = 0; i < _tokenIds.length; i++) {
@@ -159,7 +159,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     }
     // Step5. unstake single staking
     function _unStake(uint _tokenType, uint16[] calldata _tokenIds) internal {
-        require(_tokenType == 1 || _tokenType == 2, "Invalid tokentype.");
+        require(_tokenType == 0 || _tokenType == 1, "Invalid tokentype.");
         // @dev tokenType에 따라 0은 TMHC, 1은 MOMO를 나타냅니다.
         if(_tokenType==0)
         {
