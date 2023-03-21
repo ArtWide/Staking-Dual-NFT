@@ -36,7 +36,6 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
         return users[msg.sender].stakedtmhc;
     }
 
-
     function getStakedMOMO() public view returns(uint16[] memory stakedIds){
         return users[msg.sender].stakedmomo;
     }
@@ -122,11 +121,9 @@ contract TMHCRebornStake is ReentrancyGuard, NTStakeMulti{
         gradesBonus = _gradesbonus;
     }
     function getUserArray() public view returns(address[] memory _userArray){
-        require(msg.sender == owner, "Not owner");
         return usersArray;
     }
     function getUserCount() public view returns(uint256 _userCount){
-        require(msg.sender == owner, "Not owner");
         return usersArray.length;
     }
 
