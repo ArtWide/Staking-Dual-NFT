@@ -76,7 +76,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         emit Staked(msg.sender, _tokenType, _tokenIds);    // 스테이킹 이벤트를 발생시킴
     }
     // Step2. Calculation reward
-    function _calReward(uint _tokenType, uint16 _tokenId) public view returns (uint256 _Reward){
+    function _calReward(uint _tokenType, uint16 _tokenId) internal view returns (uint256 _Reward){
         // tokenType에 따라 0은 TMHC, 1은 MOMO를 나타냅니다.
         uint256 _stakeTime = 0;
         if(_tokenType==0)
@@ -100,7 +100,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         return ((_stakeTime * rewardPerHour) / 3600);
     }
     // Step2. Clculation rewalrd all stake
-    function _calRewardAll() public view returns(uint256 _Reward){
+    function _calRewardAll() internal view returns(uint256 _Reward){
         uint16[] memory _sktaedtmhc = users[msg.sender].stakedtmhc;
         uint16[] memory _stakedmomo = users[msg.sender].stakedmomo;
         uint256 _totalReward = 0;
