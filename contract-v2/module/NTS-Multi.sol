@@ -16,214 +16,265 @@ import "./NTS-Base.sol";
 
 contract NTStakeMulti is NTStakeSingle {
 
+    // Event emitted when a user stakes their team.
     event StakedTeam(address indexed user, uint16 indexed leaderId, uint16[] boostId);
+    // Event emitted when a user unstakes their team.
     event unStakedTeam(address indexed user, uint16 indexed leaderId);
-
-    // TMHC-MOMO 결합 팀 스테이킹 여부를 저장합니다.
-    struct StakeTeam{
-        address stakeowner;
-        uint16[] boostIds;
-        uint256 lastUpdateBlock;
+    // Structure that represents a staked team.
+    struct StakeTeam {
+        address stakeowner; // Address of the team's stakeowner.
+        uint16[] boostIds; // IDs of the team's boosts.
+        uint256 lastUpdateBlock; // Block number of the last update to the team's stake.
     }
 
+    // Array that stores all staked teams.
     StakeTeam[10000] public inStakedteam;
+    // Array that stores all possible grades for the team.
     uint8[] public momoGrades;
+    // Array that stores all grade bonuses for the team.
     uint8[10] public gradesBonus;
 
 
     /*///////////////////////////////////////////////////////////////
                 Team Stake / Rewards / unStake cycle
     //////////////////////////////////////////////////////////////*/
-    function _stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) public {
-        // 리더의 오너 및 스테이킹 여부를 확인합니다.
+    /**
+    * @dev Stake a team by staking a leader NFT and booster NFTs.
+    * @param _leaderId ID of the leader NFT to stake.
+    * @param _boostIds Array of IDs of booster NFTs to stake.
+    */
+    function _stakeTeam(uint16 _leaderId, uint16[] calldata _boostIds) public {
         require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
         require(inStakedtmhc[_leaderId].stakeowner != msg.sender, "TMHC already staked.");
         require(_boostIds.length <= 5, "A maximum of 5 booster NFTs are available.");
 
-
+        // Stake each booster NFT.
         for (uint16 i = 0; i < _boostIds.length; i++) {
-            // 부스터의 오너 및 스테이킹 여부를 확인합니다.
             uint16 _boostId = _boostIds[i];
             require(momoToken.ownerOf(_boostId) == msg.sender, "not MOMO owner.");
             require(inStakedmomo[_boostId].stakeowner != msg.sender, "MOMO already staked.");
 
-            // 모모 스테이킹 스토리지에 기록합니다.
             inStakedmomo[_boostId].staketeam = _leaderId;
             inStakedmomo[_boostId].stakeowner = msg.sender;
         }
-        // TMHC 스테이킹 스토리지에 기록합니다.
+
+        // Stake the leader NFT.
         inStakedtmhc[_leaderId].staketeam = _leaderId;
         inStakedtmhc[_leaderId].stakeowner = msg.sender;
 
-        //최초 사용자 추가
+        // Add user to the user list.
         procAddUser();
 
-        // 사용자 팀 스테이킹 정보에 추가합니다.
+        // Add the staked team to the user's staked team list.
         users[msg.sender].stakedteam.push(_leaderId);
 
-        // 새로운 팀을 팀 스토리지에 기록합니다.
+        // Add the staked team to the global staked team list.
         StakeTeam memory newTeam = StakeTeam(msg.sender, _boostIds, block.timestamp);
-        inStakedteam[_leaderId] = newTeam;        
-        // 이벤트 처리
+        inStakedteam[_leaderId] = newTeam;
+
+        // Emit an event to indicate that a team has been staked.
         emit StakedTeam(msg.sender, _leaderId, _boostIds);
     }
 
-    function _calRewardTeam(uint16 _staketeam) internal view returns (uint256 _Reward){
-        // Team staking status check
-        if(inStakedteam[_staketeam].stakeowner != msg.sender){
+    /**
+    * @dev Calculates the reward for a staked team.
+    * @param _staketeam The ID of the staked team to calculate the reward for.
+    * @return _Reward The calculated reward for the staked team.
+    */
+    function _calRewardTeam(uint16 _staketeam) internal view returns (uint256 _Reward) {
+        // If the sender is not the stakeowner of the team, return 0.
+        if(inStakedteam[_staketeam].stakeowner != msg.sender) {
             return 0;
         }
-        
+            
+        // Get the boost IDs and last update block for the staked team.
         uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         uint256 _lastUpdateBlock = inStakedteam[_staketeam].lastUpdateBlock;
 
+        // Calculate the base TMHC reward for the team.
         uint256 _tmhcReward = ((block.timestamp - _lastUpdateBlock) * rewardPerHour) / 3600;
-        uint256 _totlaReward = _tmhcReward;
+        uint256 _totalReward = _tmhcReward;
 
-        for(uint16 i = 0; i < _boostIds.length; i ++)
-        {
+        // Add bonus rewards for each boost owned by the team.
+        for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
             uint8 _boostGrade = momoGrades[_boostId];
             uint8 _boostRate = gradesBonus[_boostGrade];
-            _totlaReward = _totlaReward + ((_tmhcReward * _boostRate) / 100);
+            _totalReward = _totalReward + ((_tmhcReward * _boostRate) / 100);
         }
 
-        return _totlaReward;
-    }
-
-    function _calRewardTeamAll() internal view returns(uint256 _TotalReward){
-        uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
-        uint256 _totalReward = 0;
-        for(uint16 i = 0; i < _myStakeTeam.length; i++){
-            _totalReward = _totalReward + _calRewardTeam(_myStakeTeam[i]);
-        }
         return _totalReward;
     }
 
-    function _calBoostRate(uint16 _staketeam) internal view returns(uint256 _boostrate){
-        // Team staking status check
-        if(inStakedteam[_staketeam].stakeowner != msg.sender){
+    /**
+    * @dev Calculates the total reward for all staked teams of the caller.
+    * @return _TotalReward The total calculated reward for all staked teams of the caller.
+    */
+    function _calRewardTeamAll() internal view returns (uint256 _TotalReward) {
+        // Get the IDs of all staked teams owned by the caller.
+        uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
+        uint256 _totalReward = 0;
+
+        // Calculate the total reward for all owned staked teams.
+        for(uint16 i = 0; i < _myStakeTeam.length; i++) {
+            _totalReward = _totalReward + _calRewardTeam(_myStakeTeam[i]);
+        }
+
+        return _totalReward;
+    }
+
+    /**
+    * @dev Calculates the boost rate for a staked team.
+    * @param _staketeam The ID of the staked team to calculate the boost rate for.
+    * @return _boostrate The calculated boost rate for the staked team.
+    */
+    function _calBoostRate(uint16 _staketeam) internal view returns (uint256 _boostrate) {
+        // Check if the caller is the stakeowner of the team.
+        if(inStakedteam[_staketeam].stakeowner != msg.sender) {
             return 0;
         }
 
+        // Get the boost IDs for the staked team.
         uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         uint8 _boostRate = 0;
 
-        for(uint16 i = 0; i < _boostIds.length; i ++)
-        {
+        // Calculate the boost rate for the team based on owned boosts.
+        for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
-            if(momoToken.ownerOf(_boostId) == msg.sender)
-            {
-                uint8 _boostGrade =  momoGrades[_boostId];
+            if(momoToken.ownerOf(_boostId) == msg.sender) {
+                uint8 _boostGrade = momoGrades[_boostId];
                 _boostRate = _boostRate + gradesBonus[_boostGrade];
-            }else{
+            } else {
                 _boostRate = 0;
                 break;
             }
-
         }
 
         return _boostRate;
     }
 
-    function _unsetAllBoost(uint16 _staketeam) internal{
-        // 팀 해체/언스테이킹 시 부스트 해제 
+    /**
+    * @dev Unsets all boosts for a staked team when the team is unstaked.
+    * @param _staketeam The ID of the staked team to unset boosts for.
+    */
+    function _unsetAllBoost(uint16 _staketeam) internal {
+        // Unset all boosts for the staked team.
         uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
-        for (uint16 i = 0; i < _boostIds.length; i++) {
+        for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
-            if(momoToken.ownerOf(_boostId) == msg.sender){
-                // 부스터의 소유권이 있을경우 부스트의 팀 해제
+            if(momoToken.ownerOf(_boostId) == msg.sender) {
+                // If the caller is the owner of the boost, unset the boost's staked team.
                 inStakedmomo[_boostId].staketeam = 0;
                 inStakedmomo[_boostId].stakeowner = address(0);
             }
         }
     }
 
-    function _refreshTeam(uint16 _staketeam) internal{
-        // 팀 스테이킹 리플레시
+    /**
+    * @dev Refreshes a staked team by verifying ownership and updating its boosts.
+    * @param _staketeam The ID of the staked team to refresh.
+    */
+    function _refreshTeam(uint16 _staketeam) internal {
+        // Verify that the caller is the owner of the staked team.
         require(inStakedteam[_staketeam].stakeowner == msg.sender, "Not Team Owner");
+
         uint16 _leaderId = _staketeam;
         address _stakeowner = inStakedteam[_staketeam].stakeowner;
         uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
 
-        //스테이킹의 소유자가 아니거나 TMHC 소유권이 없을경우 사용자의 팀에서 삭제
-        if(msg.sender != _stakeowner || tmhcToken.balanceOf(msg.sender, _leaderId) != 1){
+        // If the caller is not the stakeowner or does not own the team leader NFT, remove the team from the caller's list of staked teams.
+        if(msg.sender != _stakeowner || tmhcToken.balanceOf(msg.sender, _leaderId) != 1) {
             uint16[] memory _array = users[msg.sender].stakedteam;
-            for (uint i = 0; i < _array.length; i++) {
-                if (_array[i] == _staketeam) {
+            for(uint i = 0; i < _array.length; i++) {
+                if(_array[i] == _staketeam) {
                     users[msg.sender].stakedteam[i] = _array[_array.length - 1];
                     users[msg.sender].stakedteam.pop();
                     break;
                 }
             }
-            // 팀 해체에 따른 부스트 NFT의 정보 갱신(언스테이킹)
+
+            // Unset all boosts for the staked team.
             _unsetAllBoost(_staketeam);
 
-            // 사용자의 스테이킹 정보가 없을경우 삭제
+            // If the caller has no staked teams, remove their stake from the users list.
             procDelUser();
-
-        }else{
-            //스테이킹 소유자 / TMHC 소유권 확인 된 경우 부스터만 재 확인
-            //부스터 갱신을 위해 삭제 후 재 확인
-            for (uint16 i = 0; i < _boostIds.length; i++) {
-                // 부스터의 오너 및 스테이킹 여부를 확인합니다.
+        } else {
+            // Verify ownership and staking status of each boost, removing any that do not meet requirements.
+            for(uint16 i = 0; i < _boostIds.length; i++) {
                 uint16 _boostId = _boostIds[i];
-                if(momoToken.ownerOf(_boostId) != msg.sender){
-                    // 부스터의 소유권이 없을경우 부스터 리스트에서 제거
-                    inStakedteam[_staketeam].boostIds[i] =_boostIds[_boostIds.length -1];
+                if(momoToken.ownerOf(_boostId) != msg.sender) {
+                    // If the caller does not own the boost, remove it from the team's boost list.
+                    inStakedteam[_staketeam].boostIds[i] = _boostIds[_boostIds.length - 1];
                     inStakedteam[_staketeam].boostIds.pop();
                 }
             }
         }
     }
 
-    function _refreshAllTeam() internal{
+    /**
+    * @dev Refreshes all staked teams owned by the caller by verifying ownership and updating their boosts.
+    */
+    function _refreshAllTeam() internal {
+        // Get the IDs of all staked teams owned by the caller.
         uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
-        for(uint16 i = 0; i < _myStakeTeam.length; i++){
+
+        // Refresh each staked team owned by the caller.
+        for(uint16 i = 0; i < _myStakeTeam.length; i++) {
             _refreshTeam(_myStakeTeam[i]);
         }
     }
 
+    /**
+    * @dev Calculates the reward for the staked team with the given leader NFT ID, transfers the reward to the caller, updates the staked team's last update block, and emits a RewardPaid event.
+    * @param _leaderId The ID of the staked team's leader NFT.
+    */
     function _claimTeam(uint16 _leaderId) internal {
-        // 팀 리워드 계산
+        // Calculate the reward for the staked team.
         uint256 _myReward = _calRewardTeam(_leaderId);
-        // 리워드 민팅팅
+        // Transfer the reward to the caller.
         rewardVault.transferToken(msg.sender, _myReward);
-        // 팀 블록타임 갱신
+        // Update the last update block for the staked team.
         inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
-        // 보상이 지급되었음을 나타내는 이벤트 발생
+        // Emit a RewardPaid event to indicate that the reward has been paid.
         emit RewardPaid(msg.sender, _myReward);
     }
 
+    /**
+    * @dev Calculates the total reward for all staked teams owned by the caller, transfers the reward to the caller using the transferToken function of the ERC-20 reward token, updates the last update block for each staked team, and emits a RewardPaid event.
+    */
     function _claimTeamAll() internal {
-        // 전체 리워드를 계산하여 받아옵니다.
+        // Calculate the total reward for all staked teams owned by the caller.
         uint256 _myReward = _calRewardTeamAll();
-        // ERC-20 토큰 발행 함수로 교체
-        rewardVault.transferToken(msg.sender, _myReward); 
-        // 팀 블록체인 타임 갱신
+        // Transfer the reward to the caller using the transferToken function of the ERC-20 reward token.
+        rewardVault.transferToken(msg.sender, _myReward);
+        // Update the last update block for each staked team owned by the caller.
         uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
-        for(uint16 i = 0; i < _myStakeTeam.length; i++){
+        for(uint16 i = 0; i < _myStakeTeam.length; i++) {
             inStakedteam[i].lastUpdateBlock = block.timestamp;
         }
-        // 보상이 지급되었음을 나타내는 이벤트 발생
+        // Emit a RewardPaid event to indicate that the reward has been paid.
         emit RewardPaid(msg.sender, _myReward);
     }
 
+    /**
+    * @dev Unstakes the teams with the given leader NFT IDs owned by the caller, calculates the reward for each team, transfers the rewards to the caller, removes the staked teams and associated boosts from the caller's stakedteam array, and emits an unStakedTeam event for each team that was unstaked.
+    * @param _leaderIds An array of leader NFT IDs corresponding to the staked teams to be unstaked.
+    */
     function _unStakeTeam(uint16[] calldata _leaderIds) internal {
-        for(uint16 i = 0; i < _leaderIds.length; i++){
+        for(uint16 i = 0; i < _leaderIds.length; i++) {
             uint16 _leaderId = _leaderIds[i];
-            // 토큰의 소유자 여부, 이미 스테이킹 여부를 확인합니다.
+            // Check that the caller is the owner of the TMHC NFT, is the owner of the staked team, and the TMHC NFT is on the staked team.
             require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
             require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
             require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
-            // 팀 리워드 계산
+            // Calculate the reward for the staked team.
             uint256 _myReward = _calRewardTeam(_leaderId);
-            // 리워드 민팅팅
+            // Transfer the reward to the caller.
             rewardVault.transferToken(msg.sender, _myReward);
-            // 보상이 지급되었음을 나타내는 이벤트 발생
+            // Emit a RewardPaid event to indicate that the reward has been paid.
             emit RewardPaid(msg.sender, _myReward);
 
-            //사용자 정보에서 스테이킹 팀 삭제
+            // Remove the staked team from the caller's stakedteam array.
             uint16[] memory _array = users[msg.sender].stakedteam;
             for (uint ii = 0; ii < _array.length; ii++) {
                 if (_array[ii] == _leaderId) {
@@ -233,10 +284,11 @@ contract NTStakeMulti is NTStakeSingle {
                 }
             }
 
+            // Unset all boosts associated with the staked team.
             _unsetAllBoost(_leaderId);
-            //사용자의 팀이 더이상 없을경우 스테이킹 사용자 삭제
+            // Delete the staked user from the user mapping if the user no longer has any staked teams.
             procDelUser();
-            // 이벤트 로그 처리
+            // Emit an unStakedTeam event to indicate that the team has been unstaked.
             emit unStakedTeam(msg.sender, _leaderId);
         }
     }
