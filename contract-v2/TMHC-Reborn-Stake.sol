@@ -9,20 +9,27 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 
 import "./module/NTS-Multi.sol";
 import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
-contract TMHCRebornStakeR1 is ReentrancyGuard, NTStakeMulti{
+contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
     bool public PauseStake;
     // Staking user array for cms.
 
-    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, uint256 _rewardPerHour, address _owner) {
+    /*///////////////////////////////////////////////////////////////
+                    Constructor + initializer logic
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, uint256 _rewardPerHour, address _owner) initializer {
         owner = _owner;
+        _setupRole(DEFAULT_ADMIN_ROLE, _owner);
         tmhcToken = _EditionToken;
         momoToken = _NFTtoken;
         rewardVault = _RewardVault;
@@ -109,15 +116,13 @@ contract TMHCRebornStakeR1 is ReentrancyGuard, NTStakeMulti{
     /*///////////////////////////////////////////////////////////////
                             Admin Function
     //////////////////////////////////////////////////////////////*/
-    function setAddMomoGrades(uint8[] calldata _momogrades) external {
-        require(msg.sender == owner, "Not owner");
+    function setAddMomoGrades(uint8[] calldata _momogrades) external onlyRole(DEFAULT_ADMIN_ROLE){
         for(uint256 i = 0; i < _momogrades.length; i++){
             momoGrades.push(_momogrades[i]);
         }
     }
 
-    function setGradesBonus(uint8[10] calldata _gradesbonus) external {
-        require(msg.sender == owner, "Not owner");
+    function setGradesBonus(uint8[10] calldata _gradesbonus) external onlyRole(DEFAULT_ADMIN_ROLE){
         gradesBonus = _gradesbonus;
     }
     function getUserArray() public view returns(address[] memory _userArray){
