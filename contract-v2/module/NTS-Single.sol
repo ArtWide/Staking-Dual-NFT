@@ -80,12 +80,12 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         emit Staked(msg.sender, _tokenType, _tokenIds);    // Emit the staking event.
     }
 
-    // Step2. Calculation reward
+    // Step2-1. Calculation reward
     /**
     * @dev Calculates the reward for a staked token.
     * @param _tokenType The type of the staked token (0 for TMHC, 1 for MOMO).
     * @param _tokenId The ID of the staked token.
-    * @return The reward amount for the staked token.
+    * @return _Reward The amount of reward for the staked token.
     */
     function _calReward(uint _tokenType, uint16 _tokenId) internal view returns (uint256 _Reward){
         // The tokenType can be either 0 for TMHC or 1 for MOMO.
@@ -113,19 +113,19 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
             }
         }
         // Calculate the reward based on the stake time and rewardPerHour.
-        return ((_stakeTime * rewardPerHour) / 3600);
+        _Reward = ((_stakeTime * rewardPerHour) / 3600);
+        return _Reward;
     }
 
-    // Step2. Clculation rewalrd all stake
+    // Step2-2. Clculation rewalrd all stake
     /**
     * @dev Calculates the total reward for all staked tokens of the caller.
-    * @return The total reward amount for all staked tokens of the caller.
+    * @return _totalReward The total reward amount for all staked tokens of the caller.
     */
-    function _calRewardAll() internal view returns(uint256 _Reward){
+    function _calRewardAll() internal view returns(uint256 _totalReward){
         // Get the list of staked TMHC and MOMO tokens for the caller.
         uint16[] memory _sktaedtmhc = users[msg.sender].stakedtmhc;
         uint16[] memory _stakedmomo = users[msg.sender].stakedmomo;
-        uint256 _totalReward = 0;
 
         // Loop through all staked TMHC tokens and calculate the reward for each.
         for (uint16 i = 0; i < _sktaedtmhc.length; i++){
