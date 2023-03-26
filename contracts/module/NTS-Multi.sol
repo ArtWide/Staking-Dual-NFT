@@ -34,6 +34,8 @@ contract NTStakeMulti is NTStakeSingle {
     // Array that stores all grade bonuses for the team.
     uint8[10] public gradesBonus;
 
+    uint256 internal teamStakeClaimed;
+
 
     /*///////////////////////////////////////////////////////////////
                 Team Stake / Rewards / unStake cycle
@@ -81,7 +83,7 @@ contract NTStakeMulti is NTStakeSingle {
     * @param _staketeam The ID of the staked team to calculate the reward for.
     * @return _Reward The calculated reward for the staked team.
     */
-    function _calRewardTeam(uint16 _staketeam) internal view returns (uint256 _Reward) {
+    function _calRewardTeam(address player, uint16 _staketeam) internal view returns (uint256 _Reward) {
         // If the sender is not the stakeowner of the team, return 0.
         if(inStakedteam[_staketeam].stakeowner != msg.sender) {
             return 0;
@@ -110,14 +112,14 @@ contract NTStakeMulti is NTStakeSingle {
     * @dev Calculates the total reward for all staked teams of the caller.
     * @return _TotalReward The total calculated reward for all staked teams of the caller.
     */
-    function _calRewardTeamAll() internal view returns (uint256 _TotalReward) {
+    function _calRewardTeamAll(address player) internal view returns (uint256 _TotalReward) {
         // Get the IDs of all staked teams owned by the caller.
-        uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
+        uint16[] memory _myStakeTeam = users[player].stakedteam;
         uint256 _totalReward = 0;
 
         // Calculate the total reward for all owned staked teams.
         for(uint16 i = 0; i < _myStakeTeam.length; i++) {
-            _totalReward = _totalReward + _calRewardTeam(_myStakeTeam[i]);
+            _totalReward = _totalReward + _calRewardTeam(player, _myStakeTeam[i]);
         }
 
         return _totalReward;
@@ -230,12 +232,14 @@ contract NTStakeMulti is NTStakeSingle {
     */
     function _claimTeam(uint16 _leaderId) internal {
         // Calculate the reward for the staked team.
-        uint256 _myReward = _calRewardTeam(_leaderId);
+        uint256 _myReward = _calRewardTeam(msg.sender, _leaderId);
+        if(_myReward == 0){ return; }
         // Transfer the reward to the caller.
         rewardVault.transferToken(msg.sender, _myReward);
         // Update the last update block for the staked team.
         inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
         // Emit a RewardPaid event to indicate that the reward has been paid.
+        teamStakeClaimed = teamStakeClaimed + _myReward;
         emit RewardPaid(msg.sender, _myReward);
     }
 
@@ -243,17 +247,11 @@ contract NTStakeMulti is NTStakeSingle {
     * @dev Calculates the total reward for all staked teams owned by the caller, transfers the reward to the caller using the transferToken function of the ERC-20 reward token, updates the last update block for each staked team, and emits a RewardPaid event.
     */
     function _claimTeamAll() internal {
-        // Calculate the total reward for all staked teams owned by the caller.
-        uint256 _myReward = _calRewardTeamAll();
-        // Transfer the reward to the caller using the transferToken function of the ERC-20 reward token.
-        rewardVault.transferToken(msg.sender, _myReward);
-        // Update the last update block for each staked team owned by the caller.
+        // claim for each staked team owned by the caller.
         uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
         for(uint16 i = 0; i < _myStakeTeam.length; i++) {
-            inStakedteam[i].lastUpdateBlock = block.timestamp;
+            _claimTeam(_myStakeTeam[i]);
         }
-        // Emit a RewardPaid event to indicate that the reward has been paid.
-        emit RewardPaid(msg.sender, _myReward);
     }
 
     /**
@@ -268,7 +266,7 @@ contract NTStakeMulti is NTStakeSingle {
             require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
             require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
             // Calculate the reward for the staked team.
-            uint256 _myReward = _calRewardTeam(_leaderId);
+            uint256 _myReward = _calRewardTeam(msg.sender, _leaderId);
             // Transfer the reward to the caller.
             rewardVault.transferToken(msg.sender, _myReward);
             // Emit a RewardPaid event to indicate that the reward has been paid.
@@ -293,5 +291,25 @@ contract NTStakeMulti is NTStakeSingle {
         }
     }
 
-    
+    /**
+    * @dev A function to get the total unclaimed rewards across all staking players.
+    * @return _totalUnClaim The total amount of unclaimed rewards.
+    */
+    function _getTeamUnClaim() internal view returns (uint256 _totalUnClaim) {
+        address[] memory _usersArray = usersArray;
+        for(uint256 i = 0; i < _usersArray.length; i++)
+        {   
+            address _player = _usersArray[i];
+            _totalUnClaim = _totalUnClaim + _calRewardTeamAll(_player);
+        }
+        return _totalUnClaim;
+    }
+
+    /**
+    * @dev Returns the total amount of rewards claimed for team staking.
+    * @return _teamStakeClaimed The total amount of rewards claimed for team staking.
+    */
+    function _getTeamClaimed() internal view returns(uint256 _teamStakeClaimed){
+        return teamStakeClaimed;
+    }
 }

@@ -32,6 +32,8 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     StakeMOMO[10000] public inStakedmomo;
     StakeTMHC[10000] public inStakedtmhc;
 
+    uint256 internal SingleStakeClaimed;
+
     /*///////////////////////////////////////////////////////////////
                Single Stake / Rewards / unStake cycle
     //////////////////////////////////////////////////////////////*/
@@ -87,14 +89,14 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     * @param _tokenId The ID of the staked token.
     * @return _Reward The amount of reward for the staked token.
     */
-    function _calReward(uint _tokenType, uint16 _tokenId) internal view returns (uint256 _Reward){
+    function _calReward(address player, uint _tokenType, uint16 _tokenId) internal view returns (uint256 _Reward){
         // The tokenType can be either 0 for TMHC or 1 for MOMO.
         uint256 _stakeTime = 0;
         if(_tokenType==0)
         {
             // TMHC
             // Check if the token is owned by the caller and if it is already staked.
-            if(tmhcToken.balanceOf(msg.sender, _tokenId) == 1 && inStakedtmhc[_tokenId].stakeowner == msg.sender && inStakedtmhc[_tokenId].staketeam == 0){
+            if(tmhcToken.balanceOf(player, _tokenId) == 1 && inStakedtmhc[_tokenId].stakeowner == player && inStakedtmhc[_tokenId].staketeam == 0){
                 // If the token is already staked, calculate the stake time.
                 _stakeTime = _stakeTime + (block.timestamp - inStakedtmhc[_tokenId].lastUpdateBlock);
             }else{
@@ -104,7 +106,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         }else if(_tokenType==1){
             // MOMO
             // Check if the token is owned by the caller and if it is already staked.
-            if(momoToken.ownerOf(_tokenId) == msg.sender && inStakedmomo[_tokenId].stakeowner == msg.sender && inStakedmomo[_tokenId].staketeam == 0){
+            if(momoToken.ownerOf(_tokenId) == player && inStakedmomo[_tokenId].stakeowner == player && inStakedmomo[_tokenId].staketeam == 0){
                 // If the token is already staked, calculate the stake time.
                 _stakeTime = _stakeTime + (block.timestamp - inStakedmomo[_tokenId].lastUpdateBlock);
             }else{
@@ -122,21 +124,21 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     * @dev Calculates the total reward for all staked tokens of the caller.
     * @return _totalReward The total reward amount for all staked tokens of the caller.
     */
-    function _calRewardAll() internal view returns(uint256 _totalReward){
+    function _calRewardAll(address player) internal view returns(uint256 _totalReward){
         // Get the list of staked TMHC and MOMO tokens for the caller.
-        uint16[] memory _sktaedtmhc = users[msg.sender].stakedtmhc;
-        uint16[] memory _stakedmomo = users[msg.sender].stakedmomo;
+        uint16[] memory _sktaedtmhc = users[player].stakedtmhc;
+        uint16[] memory _stakedmomo = users[player].stakedmomo;
 
         // Loop through all staked TMHC tokens and calculate the reward for each.
         for (uint16 i = 0; i < _sktaedtmhc.length; i++){
             uint16 _tokenId = _sktaedtmhc[i];
-            _totalReward = _totalReward + _calReward(0, _tokenId);
+            _totalReward = _totalReward + _calReward(player, 0, _tokenId);
         }
 
         // Loop through all staked MOMO tokens and calculate the reward for each.
         for (uint16 i = 0; i < _stakedmomo.length; i++){
             uint16 _tokenId = _stakedmomo[i];
-            _totalReward = _totalReward + _calReward(1, _tokenId);
+            _totalReward = _totalReward + _calReward(player, 1, _tokenId);
         }
         return _totalReward;
     }
@@ -149,7 +151,9 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     */
     function _claim(uint _tokenType, uint16 _tokenId) internal {
         // Calculate the reward for the staked token.
-        uint256 _myReward = _calReward(_tokenType, _tokenId);
+        uint256 _myReward = _calReward(msg.sender, _tokenType, _tokenId);
+        
+        if(_myReward == 0){ return; }
         // Transfer the reward tokens to the caller using the transferToken function of the ERC-20 token.
         rewardVault.transferToken(msg.sender, _myReward);
         // Reset the last update block for the staked token.
@@ -160,6 +164,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         }
         // Update the user's total rewards earned and store the reward payment information.
         users[msg.sender].rewardsEarned += _myReward;
+        SingleStakeClaimed = SingleStakeClaimed + _myReward;
         // Emit an event to indicate that the reward has been paid.
         emit RewardPaid(msg.sender, _myReward);
     }
@@ -169,27 +174,18 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
     * @dev Claims the rewards for all staked tokens of the caller and transfers them to the caller's address.
     */
     function _claimAll() internal {
-        // Calculate the total reward for all staked tokens of the caller.
-        uint256 _myReward = _calRewardAll();
-        // Reset the last update block for all staked tokens of the caller.
+        // claim all staked tokens of the caller.
         uint16[] memory _stakedtmhc = users[msg.sender].stakedtmhc;
         uint16[] memory _stakedmomo = users[msg.sender].stakedmomo;
         for(uint16 i = 0; i < _stakedtmhc.length; i++)
         {
-            inStakedtmhc[i].lastUpdateBlock = block.timestamp;
+            _claim(0, _stakedtmhc[i]);
         }
 
         for(uint16 i = 0; i < _stakedmomo.length; i++)
         {
-            inStakedmomo[i].lastUpdateBlock = block.timestamp;
+            _claim(0, _stakedmomo[i]);
         }
-
-        // Transfer the reward tokens to the caller using the transferToken function of the ERC-20 token.
-        rewardVault.transferToken(msg.sender, _myReward); 
-        // Update the user's total rewards earned and store the reward payment information.
-        users[msg.sender].rewardsEarned += _myReward;
-        // Emit an event to indicate that the rewards have been paid.
-        emit RewardPaid(msg.sender, _myReward);
     }
 
     // Step5. unstake single staking
@@ -253,5 +249,27 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         procDelUser();
         // Emit an event to indicate that the tokens have been unstaked.
         emit unStaked(msg.sender, _tokenType, _tokenIds);    
+    }
+
+    /**
+    * @dev A function to get the total unclaimed rewards across all staking players.
+    * @return _totalUnClaim The total amount of unclaimed rewards.
+    */
+    function _getSingleUnClaim() internal view returns (uint256 _totalUnClaim) {
+        address[] memory _usersArray = usersArray;
+        for(uint256 i = 0; i < _usersArray.length; i++)
+        {   
+            address _player = _usersArray[i];
+            _totalUnClaim = _totalUnClaim + _calRewardAll(_player);
+        }
+        return _totalUnClaim;
+    }
+
+    /**
+    * @dev Returns the total amount of rewards claimed for single staking.
+    * @return _SingleStakeClaimed The total amount of rewards claimed for single staking.
+    */
+    function _getSingleClaimed() internal view returns(uint256 _SingleStakeClaimed){
+        return SingleStakeClaimed;
     }
 }

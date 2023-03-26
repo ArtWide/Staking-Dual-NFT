@@ -17,7 +17,7 @@ import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
 
-contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
+contract TMHCRebornStakeR2 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
@@ -117,7 +117,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _Reward The amount of reward for the specified token.
     */
     function calReward(uint _tokenType, uint16 _tokenId) external view returns(uint256 _Reward){
-        return _calReward(_tokenType, _tokenId);
+        return _calReward(msg.sender, _tokenType, _tokenId);
     }
 
     /**
@@ -125,7 +125,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _totalReward The total reward amount for all staked tokens of the caller.
     */
     function calRewardAll() external view returns(uint256 _totalReward){
-        return _calRewardAll();
+        return _calRewardAll(msg.sender);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _TotalReward The total reward amount for the specified staked team.
     */
     function calRewardTeam(uint16 _staketeam) external view returns(uint256 _TotalReward){
-        return _calRewardTeam(_staketeam);
+        return _calRewardTeam(msg.sender, _staketeam);
     }
 
     /**
@@ -177,7 +177,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _TotalReward The total reward amount for all staked teams of the caller.
     */
     function calRewardTeamAll() external view returns (uint256 _TotalReward){
-        return _calRewardTeamAll();
+        return _calRewardTeamAll(msg.sender);
     }
 
     /**
@@ -214,6 +214,9 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
         gradesBonus = _gradesbonus;
     }
 
+    /*///////////////////////////////////////////////////////////////
+                            View Function
+    //////////////////////////////////////////////////////////////*/
     /**
     * @dev Returns an array of all users who have interacted with the contract.
     * @return _userArray An array of addresses representing all the users who have interacted with the contract.
@@ -230,4 +233,35 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
         return usersArray.length;
     }
 
+    /**
+    * @dev Returns the amount of claimed NTS tokens for the single staking pool.
+    * @return _singleClaimed The amount of claimed NTS tokens for the single staking pool.
+    */
+    function getSingleClaimed() public view returns(uint256 _singleClaimed){
+        return _getSingleClaimed();
+    }
+
+    /**
+    * @dev Returns the amount of unclaimed NTS tokens for the single staking pool.
+    * @return _singleUnClaim The amount of unclaimed NTS tokens for the single staking pool.
+    */
+    function getSingleUnClaim() public view returns(uint256 _singleUnClaim){
+        return _getSingleUnClaim();
+    }
+
+    /**
+    * @dev Returns the amount of claimed NTS tokens for the team staking pool.
+    * @return _teamClaimed The amount of claimed NTS tokens for the team staking pool.
+    */
+    function getTeamClaimed() public view returns(uint256 _teamClaimed){
+        return _getTeamClaimed();
+    }
+
+    /**
+    * @dev Returns the amount of unclaimed NTS tokens for the team staking pool.
+    * @return _teamUnClaim The amount of unclaimed NTS tokens for the team staking pool.
+    */
+    function getTeamUnClaim() public view returns(uint256 _teamUnClaim){
+        return _getTeamUnClaim();
+    }
 }
