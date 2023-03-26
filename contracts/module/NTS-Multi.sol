@@ -233,14 +233,15 @@ contract NTStakeMulti is NTStakeSingle {
     function _claimTeam(uint16 _leaderId) internal {
         // Calculate the reward for the staked team.
         uint256 _myReward = _calRewardTeam(msg.sender, _leaderId);
-        if(_myReward == 0){ return; }
-        // Transfer the reward to the caller.
-        rewardVault.transferToken(msg.sender, _myReward);
-        // Update the last update block for the staked team.
-        inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
-        // Emit a RewardPaid event to indicate that the reward has been paid.
-        teamStakeClaimed = teamStakeClaimed + _myReward;
-        emit RewardPaid(msg.sender, _myReward);
+        if(_myReward > 0){
+            // Transfer the reward to the caller.
+            rewardVault.transferToken(msg.sender, _myReward);
+            // Update the last update block for the staked team.
+            inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
+            // Emit a RewardPaid event to indicate that the reward has been paid.
+            teamStakeClaimed = teamStakeClaimed + _myReward;
+            emit RewardPaid(msg.sender, _myReward);
+        }
     }
 
     /**

@@ -153,20 +153,21 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         // Calculate the reward for the staked token.
         uint256 _myReward = _calReward(msg.sender, _tokenType, _tokenId);
         
-        if(_myReward == 0){ return; }
-        // Transfer the reward tokens to the caller using the transferToken function of the ERC-20 token.
-        rewardVault.transferToken(msg.sender, _myReward);
-        // Reset the last update block for the staked token.
-        if(_tokenType==0){
-            inStakedtmhc[_tokenId].lastUpdateBlock = block.timestamp;
-        }else if(_tokenType==1){
-            inStakedmomo[_tokenId].lastUpdateBlock = block.timestamp;
+        if(_myReward > 0){
+            // Transfer the reward tokens to the caller using the transferToken function of the ERC-20 token.
+            rewardVault.transferToken(msg.sender, _myReward);
+            // Reset the last update block for the staked token.
+            if(_tokenType==0){
+                inStakedtmhc[_tokenId].lastUpdateBlock = block.timestamp;
+            }else if(_tokenType==1){
+                inStakedmomo[_tokenId].lastUpdateBlock = block.timestamp;
+            }
+            // Update the user's total rewards earned and store the reward payment information.
+            users[msg.sender].rewardsEarned += _myReward;
+            SingleStakeClaimed = SingleStakeClaimed + _myReward;
+            // Emit an event to indicate that the reward has been paid.
+            emit RewardPaid(msg.sender, _myReward);
         }
-        // Update the user's total rewards earned and store the reward payment information.
-        users[msg.sender].rewardsEarned += _myReward;
-        SingleStakeClaimed = SingleStakeClaimed + _myReward;
-        // Emit an event to indicate that the reward has been paid.
-        emit RewardPaid(msg.sender, _myReward);
     }
 
     // Step4. Claim reward all stake
