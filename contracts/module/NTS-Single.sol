@@ -185,7 +185,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
 
         for(uint16 i = 0; i < _stakedmomo.length; i++)
         {
-            _claim(0, _stakedmomo[i]);
+            _claim(1, _stakedmomo[i]);
         }
     }
 
