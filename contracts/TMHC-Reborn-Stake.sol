@@ -17,7 +17,7 @@ import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
 
-contract TMHCRebornStakeR6 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
+contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
@@ -200,7 +200,7 @@ contract TMHCRebornStakeR6 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _staketeam The ID of the team for which the boost rate is to be calculated.
     * @return _boostrate The boost rate for the specified staked team.
     */
-    function getTeamBoost(address player, uint16 _staketeam) external view returns(uint256 _boostrate){
+    function calTeamBoost(address player, uint16 _staketeam) external view returns(uint256 _boostrate){
         return _getTeamBoost(player, _staketeam);
     }
 
