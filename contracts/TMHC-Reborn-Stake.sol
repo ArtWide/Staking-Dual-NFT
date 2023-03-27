@@ -17,7 +17,7 @@ import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
 
-contract TMHCRebornStakeR4 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
+contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
@@ -212,6 +212,11 @@ contract TMHCRebornStakeR4 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function setGradesBonus(uint8[10] calldata _gradesbonus) external onlyRole(DEFAULT_ADMIN_ROLE){
         gradesBonus = _gradesbonus;
+    }
+
+
+    function setRewardPeHour(uint256 _rewardPerHour) external onlyRole(DEFAULT_ADMIN_ROLE){
+        rewardPerHour = _rewardPerHour;
     }
 
     /*///////////////////////////////////////////////////////////////
