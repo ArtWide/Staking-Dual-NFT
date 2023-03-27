@@ -174,6 +174,10 @@ contract TMHCRebornStakeR6 is PermissionsEnumerable, Initializable, ReentrancyGu
         _unStakeTeam(_leaderIds);
     }
 
+    function refreshTeamAll() external nonReentrant{
+        _refreshAllTeam();
+    }
+
     /**
     * @dev Calculates the total reward for the specified staked team.
     * @param _staketeam The ID of the team for which the reward is to be calculated.

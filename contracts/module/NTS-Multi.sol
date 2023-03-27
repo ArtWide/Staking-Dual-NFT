@@ -36,6 +36,48 @@ contract NTStakeMulti is NTStakeSingle {
 
     uint256 internal teamStakeClaimed;
 
+    /**
+     * @dev Check if the player is the owner of the leader token.
+     */
+    function chkLeaderOwner(address player, uint16 _leaderId) internal view returns (bool) {
+        return tmhcToken.balanceOf(player, _leaderId) == 1;
+    }
+
+    /**
+     * @dev Check if the player is the owner of the boost token.
+     */
+    function chkBoostOwner(address player, uint16 _boostId) internal view returns (bool) {
+        return momoToken.ownerOf(_boostId) == player;
+    }
+
+    /**
+     * @dev Check if the player owns both the leader and boost tokens.
+     */
+    function chkOwnerAll(address player, uint16 _leaderId, uint16[] memory _boostIds) internal view returns (bool){
+        if(chkLeaderOwner(player, _leaderId) == false){ return false;}
+        for (uint16 i = 0; i < _boostIds.length; i++) {
+            if(chkBoostOwner(player, _boostIds[i]) == false){ return false;}
+        }
+        return true;
+    }
+
+    /**
+     * @dev Check if the player needs to refresh their staking status.
+     */
+    function chkRefresh(address player, uint16 _staketeam) internal view returns (bool) {
+        if(!chkLeaderOwner(player, _staketeam) && inStakedtmhc[_staketeam].stakeowner == player){
+            return true;
+        }
+
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
+        for(uint16 i = 0; i < _boostIds.length; i++) {
+            uint16 _boostId = _boostIds[i];
+            if(!chkBoostOwner(player, _boostId) && inStakedmomo[_boostId].stakeowner == player){
+                return true;
+            }
+        }
+        return false;
+    }
 
     /*///////////////////////////////////////////////////////////////
                 Team Stake / Rewards / unStake cycle
@@ -46,14 +88,13 @@ contract NTStakeMulti is NTStakeSingle {
     * @param _boostIds Array of IDs of booster NFTs to stake.
     */
     function _stakeTeam(uint16 _leaderId, uint16[] calldata _boostIds) public {
-        require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
+        require(chkOwnerAll(msg.sender, _leaderId, _boostIds), "Not NFT owner.");
         require(inStakedtmhc[_leaderId].stakeowner != msg.sender, "TMHC already staked.");
         require(_boostIds.length <= 5, "A maximum of 5 booster NFTs are available.");
 
         // Stake each booster NFT.
         for (uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
-            require(momoToken.ownerOf(_boostId) == msg.sender, "not MOMO owner.");
             require(inStakedmomo[_boostId].stakeowner != msg.sender, "MOMO already staked.");
 
             inStakedmomo[_boostId].staketeam = _leaderId;
@@ -85,9 +126,7 @@ contract NTStakeMulti is NTStakeSingle {
     */
     function _calRewardTeam(address player, uint16 _staketeam) internal view returns (uint256 _totalReward) {
         // If the sender is not the stakeowner of the team, return 0.
-        if(inStakedteam[_staketeam].stakeowner != player) {
-            return 0;
-        }
+        if(!chkLeaderOwner(player, _staketeam)) { return 0; }
             
         // Get the boost IDs and last update block for the staked team.
         uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
@@ -100,6 +139,7 @@ contract NTStakeMulti is NTStakeSingle {
         // Add bonus rewards for each boost owned by the team.
         for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
+            if(!chkBoostOwner(player, _boostId)) { return 0; }
             uint8 _boostGrade = momoGrades[_boostId];
             uint8 _boostRate = gradesBonus[_boostGrade];
             _totalReward = _totalReward + ((_tmhcReward * _boostRate) / 100);
@@ -166,26 +206,13 @@ contract NTStakeMulti is NTStakeSingle {
             uint16 _boostId = _boostIds[i];
             if(momoToken.ownerOf(_boostId) == msg.sender) {
                 // If the caller is the owner of the boost, unset the boost's staked team.
-                inStakedmomo[_boostId].staketeam = 0;
-                inStakedmomo[_boostId].stakeowner = address(0);
+                delete inStakedmomo[_boostId];
             }
         }
     }
 
-    /**
-    * @dev Refreshes a staked team by verifying ownership and updating its boosts.
-    * @param _staketeam The ID of the staked team to refresh.
-    */
     function _refreshTeam(uint16 _staketeam) internal {
-        // Verify that the caller is the owner of the staked team.
-        require(inStakedteam[_staketeam].stakeowner == msg.sender, "Not Team Owner");
-
-        uint16 _leaderId = _staketeam;
-        address _stakeowner = inStakedteam[_staketeam].stakeowner;
-        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
-
-        // If the caller is not the stakeowner or does not own the team leader NFT, remove the team from the caller's list of staked teams.
-        if(msg.sender != _stakeowner || tmhcToken.balanceOf(msg.sender, _leaderId) != 1) {
+        if(chkRefresh(msg.sender, _staketeam)){
             uint16[] memory _array = users[msg.sender].stakedteam;
             for(uint i = 0; i < _array.length; i++) {
                 if(_array[i] == _staketeam) {
@@ -194,21 +221,21 @@ contract NTStakeMulti is NTStakeSingle {
                     break;
                 }
             }
-
-            // Unset all boosts for the staked team.
-            _unsetAllBoost(_staketeam);
-
             // If the caller has no staked teams, remove their stake from the users list.
             procDelUser();
-        } else {
-            // Verify ownership and staking status of each boost, removing any that do not meet requirements.
-            for(uint16 i = 0; i < _boostIds.length; i++) {
-                uint16 _boostId = _boostIds[i];
-                if(momoToken.ownerOf(_boostId) != msg.sender) {
-                    // If the caller does not own the boost, remove it from the team's boost list.
-                    inStakedteam[_staketeam].boostIds[i] = _boostIds[_boostIds.length - 1];
-                    inStakedteam[_staketeam].boostIds.pop();
-                }
+        }else{
+            return;
+        }
+
+        if(!chkLeaderOwner(msg.sender, _staketeam) && inStakedtmhc[_staketeam].stakeowner == msg.sender){
+            delete inStakedtmhc[_staketeam];
+        }
+
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
+        for(uint16 i = 0; i < _boostIds.length; i++) {
+            uint16 _boostId = _boostIds[i];
+            if(!chkBoostOwner(msg.sender, _boostId) && inStakedmomo[_boostId].stakeowner == msg.sender){
+                delete inStakedmomo[_boostId];
             }
         }
     }
@@ -266,6 +293,8 @@ contract NTStakeMulti is NTStakeSingle {
             require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
             require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
             require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
+            // Delete TMHC data
+            delete inStakedtmhc[_leaderId];
             // Calculate the reward for the staked team.
             uint256 _myReward = _calRewardTeam(msg.sender, _leaderId);
             // Transfer the reward to the caller.
