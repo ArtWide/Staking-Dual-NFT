@@ -22,7 +22,8 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     address private owner;
     // Operation status of the Pool.
     bool public PauseStake;
-    // Staking user array for cms.
+    // Claim operation status of the Pool.
+    bool public PauseClaim;
 
     /*///////////////////////////////////////////////////////////////
                     Constructor + initializer logic
@@ -35,6 +36,8 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
         momoToken = _NFTtoken;
         rewardVault = _RewardVault;
         rewardPerHour = _rewardPerHour;
+        PauseStake = false;
+        PauseClaim = false;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -82,6 +85,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _tokenIds An array of token IDs to be staked.
     */
     function stake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
+        require(!PauseStake, "Stacking pool is currently paused.");
         _stake(_tokenType, _tokenIds);
     }
 
@@ -91,6 +95,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _tokenId The ID of the token for which the reward is claimed.
     */
     function claim(uint _tokenType, uint16 _tokenId) external nonReentrant {
+        require(!PauseClaim, "The claim is currently paused.");
         _claim(_tokenType, _tokenId);
     }
 
@@ -98,6 +103,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @dev Claims the rewards for all staked tokens of the caller.
     */
     function claimAll() external nonReentrant {
+        require(!PauseClaim, "The claim is currently paused.");
         _claimAll();
     }
 
@@ -107,6 +113,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _tokenIds An array of token IDs to be unstaked.
     */
     function unStake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
+        require(!PauseStake, "Stacking pool is currently paused.");
         _unStake(_tokenType, _tokenIds);
     }
 
@@ -137,6 +144,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _boostIds An array of IDs of the boosts to be staked.
     */
     function stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) external nonReentrant{
+        require(!PauseStake, "Stacking pool is currently paused.");
         _stakeTeam(_leaderId, _boostIds);
     }
 
@@ -145,6 +153,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _leaderId The ID of the team leader for which the rewards are claimed.
     */
     function claimTeam(uint16 _leaderId) external nonReentrant{
+        require(!PauseClaim, "The claim is currently paused.");
         _claimTeam(_leaderId);
     }
 
@@ -152,6 +161,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @dev Claims the rewards for all staked team leaders and their boosts for the caller.
     */
     function calimTeamAll() external nonReentrant{
+        require(!PauseClaim, "The claim is currently paused.");
         _claimTeamAll();
     }
 
@@ -160,6 +170,7 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _leaderIds An array of IDs of the team leaders to be unstaked.
     */
     function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
+        require(!PauseStake, "Stacking pool is currently paused.");
         _unStakeTeam(_leaderIds);
     }
 
@@ -214,9 +225,28 @@ contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGu
         gradesBonus = _gradesbonus;
     }
 
-
+    /**
+    * @dev Sets the reward amount per hour for the stake.
+    * @param _rewardPerHour The reward amount per hour.
+    */
     function setRewardPeHour(uint256 _rewardPerHour) external onlyRole(DEFAULT_ADMIN_ROLE){
         rewardPerHour = _rewardPerHour;
+    }
+
+    /**
+    * @dev Pauses the staking pool.
+    * @param _status The status of the pause.
+    */
+    function setPausePool(bool _status) external onlyRole(DEFAULT_ADMIN_ROLE){
+        PauseStake = _status;
+    }
+
+    /**
+    * @dev Pauses the claim of rewards.
+    * @param _status The status of the pause.
+    */
+    function setPauseCalim(bool _status) external onlyRole(DEFAULT_ADMIN_ROLE){
+        PauseClaim = _status;
     }
 
     /*///////////////////////////////////////////////////////////////
