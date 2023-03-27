@@ -17,7 +17,7 @@ import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
 
-contract TMHCRebornStakeR5 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
+contract TMHCRebornStakeR6 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
