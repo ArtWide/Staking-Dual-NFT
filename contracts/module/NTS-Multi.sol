@@ -81,11 +81,11 @@ contract NTStakeMulti is NTStakeSingle {
     /**
     * @dev Calculates the reward for a staked team.
     * @param _staketeam The ID of the staked team to calculate the reward for.
-    * @return _Reward The calculated reward for the staked team.
+    * @return _totalReward The calculated reward for the staked team.
     */
-    function _calRewardTeam(address player, uint16 _staketeam) internal view returns (uint256 _Reward) {
+    function _calRewardTeam(address player, uint16 _staketeam) internal view returns (uint256 _totalReward) {
         // If the sender is not the stakeowner of the team, return 0.
-        if(inStakedteam[_staketeam].stakeowner != msg.sender) {
+        if(inStakedteam[_staketeam].stakeowner != player) {
             return 0;
         }
             
@@ -95,7 +95,7 @@ contract NTStakeMulti is NTStakeSingle {
 
         // Calculate the base TMHC reward for the team.
         uint256 _tmhcReward = ((block.timestamp - _lastUpdateBlock) * rewardPerHour) / 3600;
-        uint256 _totalReward = _tmhcReward;
+        _totalReward = _tmhcReward;
 
         // Add bonus rewards for each boost owned by the team.
         for(uint16 i = 0; i < _boostIds.length; i++) {
