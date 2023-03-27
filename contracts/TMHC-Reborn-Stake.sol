@@ -44,24 +44,24 @@ contract TMHCRebornStakeR4 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @dev Returns an array of token IDs representing all the TMHC tokens staked by the caller.
     * @return stakedIds An array of token IDs representing all the staked TMHC tokens.
     */
-    function getStakedTMHC() public view returns(uint16[] memory stakedIds){
-        return users[msg.sender].stakedtmhc;
+    function getStakedTMHC(address player) public view returns(uint16[] memory stakedIds){
+        return users[player].stakedtmhc;
     }
 
     /**
     * @dev Returns an array of token IDs representing all the MOMO tokens staked by the caller.
     * @return stakedIds An array of token IDs representing all the staked MOMO tokens.
     */
-    function getStakedMOMO() public view returns(uint16[] memory stakedIds){
-        return users[msg.sender].stakedmomo;
+    function getStakedMOMO(address player) public view returns(uint16[] memory stakedIds){
+        return users[player].stakedmomo;
     }
 
     /**
     * @dev Returns an array of token IDs representing all the team tokens staked by the caller.
     * @return stakedIds An array of token IDs representing all the staked team tokens.
     */
-    function getStakedTeam() public view returns(uint16[] memory stakedIds){
-        return users[msg.sender].stakedteam;
+    function getStakedTeam(address player) public view returns(uint16[] memory stakedIds){
+        return users[player].stakedteam;
     }
 
     /**
@@ -116,16 +116,16 @@ contract TMHCRebornStakeR4 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _tokenId The ID of the token for which the reward is to be calculated.
     * @return _Reward The amount of reward for the specified token.
     */
-    function calReward(uint _tokenType, uint16 _tokenId) external view returns(uint256 _Reward){
-        return _calReward(msg.sender, _tokenType, _tokenId);
+    function calReward(address player, uint _tokenType, uint16 _tokenId) external view returns(uint256 _Reward){
+        return _calReward(player, _tokenType, _tokenId);
     }
 
     /**
     * @dev Calculates the total reward for all staked tokens of the caller.
     * @return _totalReward The total reward amount for all staked tokens of the caller.
     */
-    function calRewardAll() external view returns(uint256 _totalReward){
-        return _calRewardAll(msg.sender);
+    function calRewardAll(address player) external view returns(uint256 _totalReward){
+        return _calRewardAll(player);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -168,16 +168,16 @@ contract TMHCRebornStakeR4 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _staketeam The ID of the team for which the reward is to be calculated.
     * @return _TotalReward The total reward amount for the specified staked team.
     */
-    function calRewardTeam(uint16 _staketeam) external view returns(uint256 _TotalReward){
-        return _calRewardTeam(msg.sender, _staketeam);
+    function calRewardTeam(address player, uint16 _staketeam) external view returns(uint256 _TotalReward){
+        return _calRewardTeam(player, _staketeam);
     }
 
     /**
     * @dev Calculates the total reward for all staked teams of the caller.
     * @return _TotalReward The total reward amount for all staked teams of the caller.
     */
-    function calRewardTeamAll() external view returns (uint256 _TotalReward){
-        return _calRewardTeamAll(msg.sender);
+    function calRewardTeamAll(address player) external view returns (uint256 _TotalReward){
+        return _calRewardTeamAll(player);
     }
 
     /**
