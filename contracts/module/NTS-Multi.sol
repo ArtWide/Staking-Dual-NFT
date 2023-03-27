@@ -61,6 +61,19 @@ contract NTStakeMulti is NTStakeSingle {
         return true;
     }
 
+    function _getTeamBoost(address player, uint16 _staketeam) internal view returns (uint256 _boostRates) {
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
+        // Add bonus rewards for each boost owned by the team.
+        for(uint16 i = 0; i < _boostIds.length; i++) {
+            uint16 _boostId = _boostIds[i];
+            if(!chkBoostOwner(player, _boostId)) { _boostRates = 0; return _boostRates; }
+            uint8 _boostGrade = momoGrades[_boostId];
+            uint8 _boostRate = gradesBonus[_boostGrade];
+            _boostRates = _boostRate;
+        }
+        return _boostRates;
+    }
+
     /**
      * @dev Check if the player needs to refresh their staking status.
      */
@@ -126,24 +139,19 @@ contract NTStakeMulti is NTStakeSingle {
     */
     function _calRewardTeam(address player, uint16 _staketeam) internal view returns (uint256 _totalReward) {
         // If the sender is not the stakeowner of the team, return 0.
-        if(!chkLeaderOwner(player, _staketeam)) { return 0; }
+        if(!chkLeaderOwner(player, _staketeam)) { _totalReward=0; return _totalReward; }
             
         // Get the boost IDs and last update block for the staked team.
-        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         uint256 _lastUpdateBlock = inStakedteam[_staketeam].lastUpdateBlock;
 
         // Calculate the base TMHC reward for the team.
         uint256 _tmhcReward = ((block.timestamp - _lastUpdateBlock) * rewardPerHour) / 3600;
-        _totalReward = _tmhcReward;
 
         // Add bonus rewards for each boost owned by the team.
-        for(uint16 i = 0; i < _boostIds.length; i++) {
-            uint16 _boostId = _boostIds[i];
-            if(!chkBoostOwner(player, _boostId)) { return 0; }
-            uint8 _boostGrade = momoGrades[_boostId];
-            uint8 _boostRate = gradesBonus[_boostGrade];
-            _totalReward = _totalReward + ((_tmhcReward * _boostRate) / 100);
-        }
+        uint256 _boostRate = _getTeamBoost(player, _staketeam);
+        if(_boostRate == 0) { _totalReward=0; return _totalReward; }
+        _boostRate = _boostRate / 100;
+        _totalReward = _tmhcReward + (_tmhcReward * _boostRate);
 
         return _totalReward;
     }
@@ -163,36 +171,6 @@ contract NTStakeMulti is NTStakeSingle {
         }
 
         return _totalReward;
-    }
-
-    /**
-    * @dev Calculates the boost rate for a staked team.
-    * @param _staketeam The ID of the staked team to calculate the boost rate for.
-    * @return _boostrate The calculated boost rate for the staked team.
-    */
-    function _calBoostRate(uint16 _staketeam) internal view returns (uint256 _boostrate) {
-        // Check if the caller is the stakeowner of the team.
-        if(inStakedteam[_staketeam].stakeowner != msg.sender) {
-            return 0;
-        }
-
-        // Get the boost IDs for the staked team.
-        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
-        uint8 _boostRate = 0;
-
-        // Calculate the boost rate for the team based on owned boosts.
-        for(uint16 i = 0; i < _boostIds.length; i++) {
-            uint16 _boostId = _boostIds[i];
-            if(momoToken.ownerOf(_boostId) == msg.sender) {
-                uint8 _boostGrade = momoGrades[_boostId];
-                _boostRate = _boostRate + gradesBonus[_boostGrade];
-            } else {
-                _boostRate = 0;
-                break;
-            }
-        }
-
-        return _boostRate;
     }
 
     /**

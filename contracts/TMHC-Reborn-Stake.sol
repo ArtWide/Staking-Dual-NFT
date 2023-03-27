@@ -72,7 +72,7 @@ contract TMHCRebornStakeR6 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _staketeam The team ID whose boost IDs are being returned.
     * @return boostIds An array of boost IDs representing all the boosts for the specified team.
     */
-    function getTeamBoosts(uint16 _staketeam) public view returns(uint16[] memory boostIds){
+    function getBoostsRate(uint16 _staketeam) public view returns(uint16[] memory boostIds){
         return inStakedteam[_staketeam].boostIds;
     }
 
@@ -200,8 +200,8 @@ contract TMHCRebornStakeR6 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _staketeam The ID of the team for which the boost rate is to be calculated.
     * @return _boostrate The boost rate for the specified staked team.
     */
-    function calBoostRate(uint16 _staketeam) external view returns(uint256 _boostrate){
-        return _calBoostRate(_staketeam);
+    function getTeamBoost(address player, uint16 _staketeam) external view returns(uint256 _boostrate){
+        return _getTeamBoost(player, _staketeam);
     }
 
     /*///////////////////////////////////////////////////////////////
