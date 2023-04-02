@@ -10,27 +10,9 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./NTS-UserManager.sol";
 import "./NTS-Base.sol";
 
-contract NTStakeSingle is NTSUserManager, NTSBase {
-    // Stores staking information based on MOMO NFT ownership.
-    struct StakeMOMO {
-        address stakeowner;
-        uint16 staketeam;
-        uint256 lastUpdateBlock;
-    }
-
-    // Stores staking information based on TMHC NFT ownership.
-    struct StakeTMHC {
-        address stakeowner;
-        uint16 staketeam;
-        uint256 lastUpdateBlock;
-    }
-
-    // Arrays to store staking information for MOMO and TMHC NFTs respectively.
-    StakeMOMO[10000] public inStakedmomo;
-    StakeTMHC[10000] public inStakedtmhc;
+contract NTStakeSingle is NTSBase {
 
     uint256 internal SingleStakeClaimed;
 
@@ -50,11 +32,12 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
                 // TMHC
                 // Check the ownership and the staking status of the token.
                 require(tmhcToken.balanceOf(msg.sender, _tokenId) == 1, "not TMHC owner.");
-                require(inStakedtmhc[_tokenId].staketeam == 0, "MOMO is part of the team.");
-                require(inStakedtmhc[_tokenId].stakeowner != msg.sender, "TMHC already staked.");
+                (address _stakeowner, uint16 _staketeam, uint256 _lastUpdateTime) = UserStorage.getStakedTMHC(_tokenId);
+                require(_staketeam == 0, "MOMO is part of the team.");
+                require(_stakeowner != msg.sender, "TMHC already staked.");
 
                 // Add the user to the system if they haven't staked before.
-                procAddUser();
+                UserStorage.procAddUser(msg.sender));
                 // Add the staking to the user's information.
                 users[msg.sender].stakedtmhc.push(_tokenId);
                 // Save the staking information.
@@ -98,7 +81,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
             // Check if the token is owned by the caller and if it is already staked.
             if(tmhcToken.balanceOf(player, _tokenId) == 1 && inStakedtmhc[_tokenId].stakeowner == player && inStakedtmhc[_tokenId].staketeam == 0){
                 // If the token is already staked, calculate the stake time.
-                _stakeTime = _stakeTime + (block.timestamp - inStakedtmhc[_tokenId].lastUpdateBlock);
+                _stakeTime = _stakeTime + (block.timestamp - inStakedtmhc[_tokenId].lastUpdateTime);
             }else{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
@@ -108,7 +91,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
             // Check if the token is owned by the caller and if it is already staked.
             if(momoToken.ownerOf(_tokenId) == player && inStakedmomo[_tokenId].stakeowner == player && inStakedmomo[_tokenId].staketeam == 0){
                 // If the token is already staked, calculate the stake time.
-                _stakeTime = _stakeTime + (block.timestamp - inStakedmomo[_tokenId].lastUpdateBlock);
+                _stakeTime = _stakeTime + (block.timestamp - inStakedmomo[_tokenId].lastUpdateTime);
             }else{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
@@ -158,9 +141,9 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
             rewardVault.transferToken(_player, _myReward);
             // Reset the last update block for the staked token.
             if(_tokenType==0){
-                inStakedtmhc[_tokenId].lastUpdateBlock = block.timestamp;
+                inStakedtmhc[_tokenId].lastUpdateTime = block.timestamp;
             }else if(_tokenType==1){
-                inStakedmomo[_tokenId].lastUpdateBlock = block.timestamp;
+                inStakedmomo[_tokenId].lastUpdateTime = block.timestamp;
             }
             // Update the user's total rewards earned and store the reward payment information.
             users[_player].rewardsEarned += _myReward;
