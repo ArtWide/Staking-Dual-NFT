@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./NTS-Base.sol";
 
+
 contract NTStakeSingle is NTSBase {
 
     uint256 internal SingleStakeClaimed;
