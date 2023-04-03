@@ -37,7 +37,7 @@ contract NTStakeSingle is NTSBase {
                 require(_stakeowner != msg.sender, "TMHC already staked.");
 
                 // Add the user to the system if they haven't staked before.
-                UserStorage.procAddUser(msg.sender));
+                UserStorage.procAddUser(msg.sender);
                 // Add the staking to the user's information.
                 users[msg.sender].stakedtmhc.push(_tokenId);
                 // Save the staking information.
