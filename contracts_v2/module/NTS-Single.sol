@@ -9,7 +9,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 import "./NTS-Base.sol";
 
 contract NTStakeSingle is NTSBase {
@@ -19,7 +18,7 @@ contract NTStakeSingle is NTSBase {
     /*///////////////////////////////////////////////////////////////
                Single Stake / Rewards / unStake cycle
     //////////////////////////////////////////////////////////////*/
-
+    
     //Step1. Start single staking
     function _stake(uint _tokenType, uint16[] calldata _tokenIds) internal {
         // tokenType 0 is for TMHC, and 1 is for MOMO.
@@ -32,17 +31,17 @@ contract NTStakeSingle is NTSBase {
                 // TMHC
                 // Check the ownership and the staking status of the token.
                 require(tmhcToken.balanceOf(msg.sender, _tokenId) == 1, "not TMHC owner.");
-                (address _stakeowner, uint16 _staketeam, uint256 _lastUpdateTime) = UserStorage.getStakedTMHC(_tokenId);
-                require(_staketeam == 0, "MOMO is part of the team.");
-                require(_stakeowner != msg.sender, "TMHC already staked.");
+                StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_tokenId);
+                require(_inStakedtmhc[_tokenId].staketeam == 0, "MOMO is part of the team.");
+                require(_inStakedtmhc[_tokenId].stakeowner != msg.sender, "TMHC already staked.");
 
                 // Add the user to the system if they haven't staked before.
-                UserStorage.procAddUser(msg.sender);
+                userStorage.procAddUser(msg.sender);
                 // Add the staking to the user's information.
-                users[msg.sender].stakedtmhc.push(_tokenId);
+                userStorage.pushStakedTmhc(_tokenId);
                 // Save the staking information.
                 StakeTMHC memory _staketmhc = StakeTMHC(msg.sender, 0, block.timestamp);
-                inStakedtmhc[_tokenId] = _staketmhc;
+                userStorage.setInStakedTMHC(_tokenId, _staketmhc);
             }
         }else if(_tokenType==1){
             for (uint16 i = 0; i < _tokenIds.length; i++) {
@@ -50,16 +49,17 @@ contract NTStakeSingle is NTSBase {
                 // MOMO
                 // Check the ownership and the staking status of the token.
                 require(momoToken.ownerOf(_tokenId) == msg.sender, "not MOMO owner.");
-                require(inStakedmomo[_tokenId].staketeam == 0, "MOMO is part of the team.");
-                require(inStakedmomo[_tokenId].stakeowner != msg.sender, "MOMO already staked.");
+                StakeMOMO memory _inStakedmomo = userStorage.getStakedMOMO(_tokenId);
+                require(_inStakedmomo[_tokenId].staketeam == 0, "MOMO is part of the team.");
+                require(_inStakedmomo[_tokenId].stakeowner != msg.sender, "MOMO already staked.");
 
                 // Add the user to the system if they haven't staked before.
-                procAddUser();
+                userStorage.procAddUser(msg.sender);
                 // Add the staking to the user's information.
-                users[msg.sender].stakedmomo.push(_tokenId);
+                userStorage.pushStakedMomo(_tokenId);
                 // Save the staking information.
                 StakeMOMO memory _stakemomo = StakeMOMO(msg.sender, 0, block.timestamp);
-                inStakedmomo[_tokenId] = _stakemomo;
+                userStorage.setInStakedMOMO(_tokenId, _stakemomo);
             }
         }
         emit Staked(msg.sender, _tokenType, _tokenIds);    // Emit the staking event.
@@ -78,20 +78,22 @@ contract NTStakeSingle is NTSBase {
         if(_tokenType==0)
         {
             // TMHC
+            StakeTMHC memory _inStakedtmhc = userStorage.getStakedUserTMHC(_tokenId);
             // Check if the token is owned by the caller and if it is already staked.
-            if(tmhcToken.balanceOf(player, _tokenId) == 1 && inStakedtmhc[_tokenId].stakeowner == player && inStakedtmhc[_tokenId].staketeam == 0){
+            if(tmhcToken.balanceOf(player, _tokenId) == 1 && _inStakedtmhc[_tokenId].stakeowner == player && _inStakedtmhc[_tokenId].staketeam == 0){
                 // If the token is already staked, calculate the stake time.
-                _stakeTime = _stakeTime + (block.timestamp - inStakedtmhc[_tokenId].lastUpdateTime);
+                _stakeTime = _stakeTime + (block.timestamp - _inStakedtmhc[_tokenId].lastUpdateTime);
             }else{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
             }
         }else if(_tokenType==1){
             // MOMO
+            StakeMOMO memory _inStakedmomo = userStorage.getStakedUserMOMO(_tokenId);
             // Check if the token is owned by the caller and if it is already staked.
-            if(momoToken.ownerOf(_tokenId) == player && inStakedmomo[_tokenId].stakeowner == player && inStakedmomo[_tokenId].staketeam == 0){
+            if(momoToken.ownerOf(_tokenId) == player && _inStakedmomo[_tokenId].stakeowner == player && _inStakedmomo[_tokenId].staketeam == 0){
                 // If the token is already staked, calculate the stake time.
-                _stakeTime = _stakeTime + (block.timestamp - inStakedmomo[_tokenId].lastUpdateTime);
+                _stakeTime = _stakeTime + (block.timestamp - _inStakedmomo[_tokenId].lastUpdateTime);
             }else{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
@@ -107,21 +109,21 @@ contract NTStakeSingle is NTSBase {
     * @dev Calculates the total reward for all staked tokens of the caller.
     * @return _totalReward The total reward amount for all staked tokens of the caller.
     */
-    function _calRewardAll(address player) internal view returns(uint256 _totalReward){
+    function _calRewardAll(address _player) internal view returns(uint256 _totalReward){
         // Get the list of staked TMHC and MOMO tokens for the caller.
-        uint16[] memory _sktaedtmhc = users[player].stakedtmhc;
-        uint16[] memory _stakedmomo = users[player].stakedmomo;
+        uint16[] memory _stakedtmhc = userStorage.getStakedUserTmhc(_player);
+        uint16[] memory _stakedmomo = userStorage.getStakedUserMomo(_player);
 
         // Loop through all staked TMHC tokens and calculate the reward for each.
-        for (uint16 i = 0; i < _sktaedtmhc.length; i++){
-            uint16 _tokenId = _sktaedtmhc[i];
-            _totalReward = _totalReward + _calReward(player, 0, _tokenId);
+        for (uint16 i = 0; i < _stakedtmhc.length; i++){
+            uint16 _tokenId = _stakedtmhc[i];
+            _totalReward = _totalReward + _calReward(_player, 0, _tokenId);
         }
 
         // Loop through all staked MOMO tokens and calculate the reward for each.
         for (uint16 i = 0; i < _stakedmomo.length; i++){
             uint16 _tokenId = _stakedmomo[i];
-            _totalReward = _totalReward + _calReward(player, 1, _tokenId);
+            _totalReward = _totalReward + _calReward(_player, 1, _tokenId);
         }
         return _totalReward;
     }
@@ -141,12 +143,12 @@ contract NTStakeSingle is NTSBase {
             rewardVault.transferToken(_player, _myReward);
             // Reset the last update block for the staked token.
             if(_tokenType==0){
-                inStakedtmhc[_tokenId].lastUpdateTime = block.timestamp;
+                userStorage.setInStakedTMHCTime(_tokenId);
             }else if(_tokenType==1){
-                inStakedmomo[_tokenId].lastUpdateTime = block.timestamp;
+                userStorage.setInStakedMOMOTime(_tokenId);
             }
             // Update the user's total rewards earned and store the reward payment information.
-            users[_player].rewardsEarned += _myReward;
+            userStorage.addRewardsEarned(_myReward);
             SingleStakeClaimed = SingleStakeClaimed + _myReward;
             // Emit an event to indicate that the reward has been paid.
             emit RewardPaid(_player, _myReward);
@@ -159,8 +161,8 @@ contract NTStakeSingle is NTSBase {
     */
     function _claimAll(address _player) internal {
         // claim all staked tokens of the caller.
-        uint16[] memory _stakedtmhc = users[_player].stakedtmhc;
-        uint16[] memory _stakedmomo = users[_player].stakedmomo;
+        uint16[] memory _stakedtmhc = userStorage.getStakedUserTmhc(_player);
+        uint16[] memory _stakedmomo = userStorage.getStakedUserMomo(_player);
         for(uint16 i = 0; i < _stakedtmhc.length; i++)
         {
             _claim(_player, 0, _stakedtmhc[i]);
@@ -188,21 +190,14 @@ contract NTStakeSingle is NTSBase {
                 // TMHC
                 // Check if the caller is the owner of the token and if the token is already staked.
                 require(tmhcToken.balanceOf(msg.sender, _tokenId) == 1, "not TMHC owner.");
-                require(inStakedtmhc[_tokenId].stakeowner == msg.sender, "TMHC not staked.");
-                require(inStakedtmhc[_tokenId].staketeam == 0 , "TMHC is on the team.");
+                StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_tokenId);
+                require(_inStakedtmhc[_tokenId].stakeowner == msg.sender, "TMHC not staked.");
+                require(_inStakedtmhc[_tokenId].staketeam == 0 , "TMHC is on the team.");
                 // Claim the reward before unstaking the token.
                 _claim(_player, _tokenType, _tokenId);
                 // Remove the staked token from the user's stakedtmhc array.
-                uint16[] memory _array = users[msg.sender].stakedtmhc;
-                for (uint ii = 0; ii < _array.length; ii++) {
-                    if (_array[ii] == _tokenId) {
-                        users[msg.sender].stakedtmhc[ii] = _array[_array.length - 1];
-                        users[msg.sender].stakedtmhc.pop();
-                        break;
-                    }
-                }
-                // Delete the staked token from the inStakedtmhc mapping.
-                delete inStakedtmhc[_tokenId];
+                userStorage.popStakedTmhc(_player, _tokenId);
+                userStorage.delInStakedTMHC(_tokenId);
             }
         }else if(_tokenType==1){
             for (uint16 i = 0; i < _tokenIds.length; i++) {
@@ -210,29 +205,22 @@ contract NTStakeSingle is NTSBase {
                 // MOMO
                 // Check if the caller is the owner of the token and if the token is already staked.
                 require(momoToken.ownerOf(_tokenId) == msg.sender, "not MOMO owner.");
-                require(inStakedmomo[_tokenId].stakeowner == msg.sender, "MOMO not staked.");
-                require(inStakedmomo[_tokenId].staketeam == 0 , "TMHC is on the team.");
+                StakeMOMO memory _inStakedmomo = userStorage.getStakedMOMO(_tokenId);
+                require(_inStakedmomo[_tokenId].stakeowner == msg.sender, "MOMO not staked.");
+                require(_inStakedmomo[_tokenId].staketeam == 0 , "TMHC is on the team.");
                 // Claim the reward before unstaking the token.
                 _claim(_player, _tokenType, _tokenId);
                 // Remove the staked token from the user's stakedmomo array.
-                uint16[] memory _array = users[msg.sender].stakedmomo;
-                for (uint ii = 0; ii < _array.length; ii++) {
-                    if (_array[ii] == _tokenId) {
-                        users[msg.sender].stakedmomo[ii] = _array[_array.length - 1];
-                        users[msg.sender].stakedmomo.pop();
-                        break;
-                    }
-                }
-                // Delete the staked token from the inStakedmomo mapping.
-                delete inStakedmomo[_tokenId];
+                userStorage.popStakedMomo(_player, _tokenId);
+                userStorage.delInStakedMOMO(_tokenId);
             }
         }else{
             revert("Invalid tokentype.");
         }
         // Delete the user from the users mapping if they have no staked tokens.
-        procDelUser();
+        userStorage.procDelUser(_player);
         // Emit an event to indicate that the tokens have been unstaked.
-        emit unStaked(msg.sender, _tokenType, _tokenIds);    
+        emit unStaked(_player, _tokenType, _tokenIds);    
     }
 
     /**
@@ -240,7 +228,7 @@ contract NTStakeSingle is NTSBase {
     * @return _totalUnClaim The total amount of unclaimed rewards.
     */
     function _getSingleUnClaim() internal view returns (uint256 _totalUnClaim) {
-        address[] memory _usersArray = usersArray;
+        address[] memory _usersArray = userStorage.getUsersArray();
         for(uint256 i = 0; i < _usersArray.length; i++)
         {   
             address _player = _usersArray[i];

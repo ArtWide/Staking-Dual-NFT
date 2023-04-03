@@ -19,7 +19,7 @@ contract NTSBase {
     // Reward ERC20 Token contract
     NTSRewardVault public rewardVault;
 
-    NTSUserManager public UserStorage;
+    NTSUserManager public userStorage;
     
     // Reward per Hour - TMHC
     uint256 public rewardPerHour;    
@@ -27,9 +27,9 @@ contract NTSBase {
     uint256 public rewardPerHourSub;
 
 
-
     event Staked(address indexed user, uint tokenType, uint16 [] indexed tokenId);       
     event unStaked(address indexed user, uint tokenType, uint16[] boostId);    
     event RewardPaid(address indexed user, uint256 reward);
+
 }
 
