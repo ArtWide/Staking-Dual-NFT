@@ -40,45 +40,72 @@ contract NTSUserManager is PermissionsEnumerable{
     StakeMOMO[10000] public inStakedmomo;
     StakeTMHC[10000] public inStakedtmhc;
 
-    // @dev MOMO Stake Interface
+    // Structure that represents a staked team.
+    struct StakeTeam {
+        address stakeowner; // Address of the team's stakeowner.
+        uint16[] boostIds; // IDs of the team's boosts.
+        uint256 lastUpdateTime; // Block number of the last update to the team's stake.
+    }
+
+    // Array that stores all staked teams.
+    StakeTeam[10000] public inStakedteam;
+
+    /*///////////////////////////////////////////////////////////////
+                         Stake Item Storage
+    //////////////////////////////////////////////////////////////*/
+
+    // @dev MOMO Stake
     function getStakedMOMO(uint16 _tokenId) public view returns(StakeMOMO memory){
         return inStakedmomo[_tokenId];
     }
-
-    // Set inStakedmomo by _tokenId
     function setInStakedMOMO(uint16 _tokenId, StakeMOMO memory stake) public onlyRole(DEFAULT_ADMIN_ROLE){
         require(_tokenId < inStakedmomo.length, "_tokenId out of bounds");
         inStakedmomo[_tokenId] = stake;
     }
-
     function setInStakedMOMOTime(uint16 _tokenId) public{
         inStakedmomo[_tokenId].lastUpdateTime = block.timestamp;
     }
-
     function delInStakedMOMO(uint16 _tokenId) public onlyRole(DEFAULT_ADMIN_ROLE){
         require(_tokenId < inStakedmomo.length, "_tokenId out of bounds");
         delete inStakedmomo[_tokenId];
     }
 
-    // @dev TMHC Stake Interface
+    // @dev TMHC Stake
     function getStakedTMHC(uint16 _tokenId) public view returns(StakeTMHC memory values){
         return inStakedtmhc[_tokenId];
     }
-
-    // Set inStakedtmhc by _tokenId
     function setInStakedTMHC(uint16 _tokenId, StakeTMHC memory stake) public onlyRole(DEFAULT_ADMIN_ROLE){
         require(_tokenId < inStakedtmhc.length, "_tokenId out of bounds");
         inStakedtmhc[_tokenId] = stake;
     }
-
     function setInStakedTMHCTime(uint16 _tokenId) public {
         inStakedtmhc[_tokenId].lastUpdateTime = block.timestamp;
     }
-
     function delInStakedTMHC(uint16 _tokenId) public onlyRole(DEFAULT_ADMIN_ROLE){
         require(_tokenId < inStakedtmhc.length, "_tokenId out of bounds");
         delete inStakedtmhc[_tokenId];
     }
+
+    // @dev Team Stake
+    function setInStakedTeam(uint16 _tokenId, StakeTeam memory stake) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_tokenId < inStakedteam.length, "_tokenId out of bounds");
+        inStakedteam[_tokenId] = stake;
+    }
+    function getInStakedTeam(uint16 _tokenId) public view returns (StakeTeam memory) {
+        require(_tokenId < inStakedteam.length, "_tokenId out of bounds");
+        return inStakedteam[_tokenId];
+    }
+    function setInStakedTeamTime(uint16 _tokenId) public {
+        inStakedteam[_tokenId].lastUpdateTime = block.timestamp;
+    }
+    function delInStakedTeam(uint16 _tokenId) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_tokenId < inStakedteam.length, "_tokenId out of bounds");
+        delete inStakedteam[_tokenId];
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                              User Storage
+    //////////////////////////////////////////////////////////////*/
 
     // Get rewardsEarned for a user
     function getRewardsEarned(address user) public view returns (uint256) {
