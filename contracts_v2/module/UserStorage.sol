@@ -61,7 +61,7 @@ contract NTSUserManager is PermissionsEnumerable{
     }
 
     // @dev TMHC Stake Interface
-    function getStakedTMHC(uint16 _tokenId) public view returns(StakeTMHC memory){
+    function getStakedTMHC(uint16 _tokenId) public view returns(StakeTMHC memory values){
         return inStakedtmhc[_tokenId];
     }
 

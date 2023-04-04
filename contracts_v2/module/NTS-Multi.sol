@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./NTS-Single.sol";
-import "./NTS-UserManager.sol"; 
 import "./NTS-Base.sol";
 
 contract NTStakeMulti is NTStakeSingle {

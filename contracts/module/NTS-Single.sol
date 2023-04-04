@@ -204,17 +204,17 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
                 uint16 _tokenId = _tokenIds[i];
                 // TMHC
                 // Check if the caller is the owner of the token and if the token is already staked.
-                require(tmhcToken.balanceOf(msg.sender, _tokenId) == 1, "not TMHC owner.");
-                require(inStakedtmhc[_tokenId].stakeowner == msg.sender, "TMHC not staked.");
+                require(tmhcToken.balanceOf(_player, _tokenId) == 1, "not TMHC owner.");
+                require(inStakedtmhc[_tokenId].stakeowner ==_player, "TMHC not staked.");
                 require(inStakedtmhc[_tokenId].staketeam == 0 , "TMHC is on the team.");
                 // Claim the reward before unstaking the token.
                 _claim(_player, _tokenType, _tokenId);
                 // Remove the staked token from the user's stakedtmhc array.
-                uint16[] memory _array = users[msg.sender].stakedtmhc;
+                uint16[] memory _array = users[_player].stakedtmhc;
                 for (uint ii = 0; ii < _array.length; ii++) {
                     if (_array[ii] == _tokenId) {
-                        users[msg.sender].stakedtmhc[ii] = _array[_array.length - 1];
-                        users[msg.sender].stakedtmhc.pop();
+                        users[_player].stakedtmhc[ii] = _array[_array.length - 1];
+                        users[_player].stakedtmhc.pop();
                         break;
                     }
                 }
@@ -226,17 +226,17 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
                 uint16 _tokenId = _tokenIds[i];
                 // MOMO
                 // Check if the caller is the owner of the token and if the token is already staked.
-                require(momoToken.ownerOf(_tokenId) == msg.sender, "not MOMO owner.");
-                require(inStakedmomo[_tokenId].stakeowner == msg.sender, "MOMO not staked.");
+                require(momoToken.ownerOf(_tokenId) == _player, "not MOMO owner.");
+                require(inStakedmomo[_tokenId].stakeowner == _player, "MOMO not staked.");
                 require(inStakedmomo[_tokenId].staketeam == 0 , "TMHC is on the team.");
                 // Claim the reward before unstaking the token.
                 _claim(_player, _tokenType, _tokenId);
                 // Remove the staked token from the user's stakedmomo array.
-                uint16[] memory _array = users[msg.sender].stakedmomo;
+                uint16[] memory _array = users[_player].stakedmomo;
                 for (uint ii = 0; ii < _array.length; ii++) {
                     if (_array[ii] == _tokenId) {
-                        users[msg.sender].stakedmomo[ii] = _array[_array.length - 1];
-                        users[msg.sender].stakedmomo.pop();
+                        users[_player].stakedmomo[ii] = _array[_array.length - 1];
+                        users[_player].stakedmomo.pop();
                         break;
                     }
                 }
@@ -249,7 +249,7 @@ contract NTStakeSingle is NTSUserManager, NTSBase {
         // Delete the user from the users mapping if they have no staked tokens.
         procDelUser();
         // Emit an event to indicate that the tokens have been unstaked.
-        emit unStaked(msg.sender, _tokenType, _tokenIds);    
+        emit unStaked_player, _tokenType, _tokenIds);    
     }
 
     /**

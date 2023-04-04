@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 
 import "./module/NTS-Multi.sol";
-import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
 
@@ -29,12 +28,13 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
                     Constructor + initializer logic
     //////////////////////////////////////////////////////////////*/
 
-    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, uint256 _rewardPerHour, address _owner) initializer {
+    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, NTSUserManager _userStorage, uint256 _rewardPerHour, address _owner) initializer {
         owner = _owner;
         _setupRole(DEFAULT_ADMIN_ROLE, _owner);
         tmhcToken = _EditionToken;
         momoToken = _NFTtoken;
         rewardVault = _RewardVault;
+        userStorage = _userStorage;
         rewardPerHour = _rewardPerHour;
         PauseStake = false;
         PauseClaim = false;
@@ -86,7 +86,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function stake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
         require(!PauseStake, "Stacking pool is currently paused.");
-        _stake(_tokenType, _tokenIds);
+        _stake(msg.sender, _tokenType, _tokenIds);
     }
 
     /**
