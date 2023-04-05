@@ -48,7 +48,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return stakedIds An array of token IDs representing all the staked TMHC tokens.
     */
     function getStakedTMHC(address player) public view returns(uint16[] memory stakedIds){
-        return users[player].stakedtmhc;
+        return userStorage.getStakedUserTmhc(player);
     }
 
     /**
@@ -56,7 +56,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return stakedIds An array of token IDs representing all the staked MOMO tokens.
     */
     function getStakedMOMO(address player) public view returns(uint16[] memory stakedIds){
-        return users[player].stakedmomo;
+        return userStorage.getStakedUserMomo(player);
     }
 
     /**
@@ -64,16 +64,22 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return stakedIds An array of token IDs representing all the staked team tokens.
     */
     function getStakedTeam(address player) public view returns(uint16[] memory stakedIds){
-        return users[player].stakedteam;
+        return userStorage.getStakedUserTeam(player);
     }
 
     /**
     * @dev Returns an array of boost IDs representing all the boosts for the specified team staked by the caller.
     * @param _staketeam The team ID whose boost IDs are being returned.
-    * @return boostIds An array of boost IDs representing all the boosts for the specified team.
+    * @return _TeamBoostRate An Staked team boost rate.
     */
-    function getBoostsRate(uint16 _staketeam) public view returns(uint16[] memory boostIds){
-        return inStakedteam[_staketeam].boostIds;
+    function getBoostsRate(address player, uint16 _staketeam) public view returns(uint256 _TeamBoostRate){
+        return _getTeamBoostRate(player, _staketeam);
+        
+    }
+
+    function getBoostIds(uint16 _staketeam) public view returns(uint16[] memory boostIds){
+        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
+        return _inStakedteam.boostIds;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -145,7 +151,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) external nonReentrant{
         require(!PauseStake, "Stacking pool is currently paused.");
-        _stakeTeam(_leaderId, _boostIds);
+        _stakeTeam(msg.sender, _leaderId, _boostIds);
     }
 
     /**
@@ -171,11 +177,11 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
         require(!PauseStake, "Stacking pool is currently paused.");
-        _unStakeTeam(_leaderIds);
+        _unStakeTeam(msg.sender, _leaderIds);
     }
 
     function refreshTeamAll() external nonReentrant{
-        _refreshAllTeam();
+        _refreshAllTeam(msg.sender);
     }
 
     /**
@@ -201,7 +207,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _boostrate The boost rate for the specified staked team.
     */
     function calTeamBoost(address player, uint16 _staketeam) external view returns(uint256 _boostrate){
-        return _getTeamBoost(player, _staketeam);
+        return _getTeamBoostRate(player, _staketeam);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -314,10 +320,10 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     //////////////////////////////////////////////////////////////*/
     /**
     * @dev Returns an array of all users who have interacted with the contract.
-    * @return _userArray An array of addresses representing all the users who have interacted with the contract.
+    * @return _usersArray An array of addresses representing all the users who have interacted with the contract.
     */
-    function getUserArray() public view returns(address[] memory _userArray){
-        return usersArray;
+    function getUsersArray() public view returns(address[] memory _usersArray){
+        _usersArray = userStorage.getUsersArray();
     }
 
     /**
@@ -325,7 +331,8 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _userCount The count of all users who have interacted with the contract.
     */
     function getUserCount() public view returns(uint256 _userCount){
-        return usersArray.length;
+        address[] memory _usersArray = userStorage.getUsersArray();
+        return _usersArray.length;
     }
 
     /**
