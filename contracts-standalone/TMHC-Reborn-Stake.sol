@@ -13,10 +13,11 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 
 import "./module/NTS-Multi.sol";
+import "./module/NTS-UserManager.sol";
 import "./module/RewardVault.sol";
 
 
-contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
+contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
@@ -26,18 +27,15 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
 
     /*///////////////////////////////////////////////////////////////
                     Constructor + initializer logic
-    //////////////////////////////////////////////////////////////*/ 
+    //////////////////////////////////////////////////////////////*/
 
-    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, NTSUserManager _userStorage, NTSGradeStorage _gradeStorage, uint256 _rewardPerHour, uint256 _rewardPerHourSub, address _owner) initializer {
+    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, uint256 _rewardPerHour, address _owner) initializer {
         owner = _owner;
         _setupRole(DEFAULT_ADMIN_ROLE, _owner);
         tmhcToken = _EditionToken;
         momoToken = _NFTtoken;
         rewardVault = _RewardVault;
-        userStorage = _userStorage;
-        gradeStorage = _gradeStorage;
         rewardPerHour = _rewardPerHour;
-        rewardPerHourSub = _rewardPerHourSub;
         PauseStake = false;
         PauseClaim = false;
     }
@@ -50,7 +48,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return stakedIds An array of token IDs representing all the staked TMHC tokens.
     */
     function getStakedTMHC(address player) public view returns(uint16[] memory stakedIds){
-        return userStorage.getStakedUserTmhc(player);
+        return users[player].stakedtmhc;
     }
 
     /**
@@ -58,7 +56,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return stakedIds An array of token IDs representing all the staked MOMO tokens.
     */
     function getStakedMOMO(address player) public view returns(uint16[] memory stakedIds){
-        return userStorage.getStakedUserMomo(player);
+        return users[player].stakedmomo;
     }
 
     /**
@@ -66,22 +64,16 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return stakedIds An array of token IDs representing all the staked team tokens.
     */
     function getStakedTeam(address player) public view returns(uint16[] memory stakedIds){
-        return userStorage.getStakedUserTeam(player);
+        return users[player].stakedteam;
     }
 
     /**
     * @dev Returns an array of boost IDs representing all the boosts for the specified team staked by the caller.
     * @param _staketeam The team ID whose boost IDs are being returned.
-    * @return _TeamBoostRate An Staked team boost rate.
+    * @return boostIds An array of boost IDs representing all the boosts for the specified team.
     */
-    function getBoostsRate(address player, uint16 _staketeam) public view returns(uint256 _TeamBoostRate){
-        return _getTeamBoostRate(player, _staketeam);
-        
-    }
-
-    function getBoostIds(uint16 _staketeam) public view returns(uint16[] memory boostIds){
-        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
-        return _inStakedteam.boostIds;
+    function getBoostsRate(uint16 _staketeam) public view returns(uint16[] memory boostIds){
+        return inStakedteam[_staketeam].boostIds;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -94,7 +86,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function stake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
         require(!PauseStake, "Stacking pool is currently paused.");
-        _stake(msg.sender, _tokenType, _tokenIds);
+        _stake(_tokenType, _tokenIds);
     }
 
     /**
@@ -153,7 +145,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) external nonReentrant{
         require(!PauseStake, "Stacking pool is currently paused.");
-        _stakeTeam(msg.sender, _leaderId, _boostIds);
+        _stakeTeam(_leaderId, _boostIds);
     }
 
     /**
@@ -179,11 +171,11 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     */
     function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
         require(!PauseStake, "Stacking pool is currently paused.");
-        _unStakeTeam(msg.sender, _leaderIds);
+        _unStakeTeam(_leaderIds);
     }
 
     function refreshTeamAll() external nonReentrant{
-        _refreshAllTeam(msg.sender);
+        _refreshAllTeam();
     }
 
     /**
@@ -209,13 +201,33 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _boostrate The boost rate for the specified staked team.
     */
     function calTeamBoost(address player, uint16 _staketeam) external view returns(uint256 _boostrate){
-        return _getTeamBoostRate(player, _staketeam);
+        return _getTeamBoost(player, _staketeam);
     }
 
     /*///////////////////////////////////////////////////////////////
                             Admin Function
     //////////////////////////////////////////////////////////////*/
+    /**
+    * @dev Sets the MOMO grades to be used for calculating the bonus rate.
+    * @param _momogrades An array of MOMO grades to be added to the existing grades.
+    * Requirements:
+    * - The function can only be called by an account with the DEFAULT_ADMIN_ROLE.
+    */
+    function setAddMomoGrades(uint8[] calldata _momogrades) external onlyRole(DEFAULT_ADMIN_ROLE){
+        for(uint256 i = 0; i < _momogrades.length; i++){
+            momoGrades.push(_momogrades[i]);
+        }
+    }
 
+    /**
+    * @dev Sets the bonus rates for each token grade.
+    * @param _gradesbonus An array of bonus rates for each token grade.
+    * Requirements:
+    * - The function can only be called by an account with the DEFAULT_ADMIN_ROLE.
+    */
+    function setGradesBonus(uint8[10] calldata _gradesbonus) external onlyRole(DEFAULT_ADMIN_ROLE){
+        gradesBonus = _gradesbonus;
+    }
 
     /**
     * @dev Sets the reward amount per hour for the stake.
@@ -302,10 +314,10 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     //////////////////////////////////////////////////////////////*/
     /**
     * @dev Returns an array of all users who have interacted with the contract.
-    * @return _usersArray An array of addresses representing all the users who have interacted with the contract.
+    * @return _userArray An array of addresses representing all the users who have interacted with the contract.
     */
-    function getUsersArray() public view returns(address[] memory _usersArray){
-        _usersArray = userStorage.getUsersArray();
+    function getUserArray() public view returns(address[] memory _userArray){
+        return usersArray;
     }
 
     /**
@@ -313,8 +325,7 @@ contract TMHCRebornStakeR1 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @return _userCount The count of all users who have interacted with the contract.
     */
     function getUserCount() public view returns(uint256 _userCount){
-        address[] memory _usersArray = userStorage.getUsersArray();
-        return _usersArray.length;
+        return usersArray.length;
     }
 
     /**

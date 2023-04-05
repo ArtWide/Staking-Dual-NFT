@@ -11,6 +11,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./NTS-Single.sol";
+import "./NTS-UserManager.sol"; 
+import "./NTS-Base.sol";
 
 contract NTStakeMulti is NTStakeSingle {
 
@@ -18,6 +20,19 @@ contract NTStakeMulti is NTStakeSingle {
     event StakedTeam(address indexed user, uint16 indexed leaderId, uint16[] boostId);
     // Event emitted when a user unstakes their team.
     event unStakedTeam(address indexed user, uint16 indexed leaderId);
+    // Structure that represents a staked team.
+    struct StakeTeam {
+        address stakeowner; // Address of the team's stakeowner.
+        uint16[] boostIds; // IDs of the team's boosts.
+        uint256 lastUpdateBlock; // Block number of the last update to the team's stake.
+    }
+
+    // Array that stores all staked teams.
+    StakeTeam[10000] public inStakedteam;
+    // Array that stores all possible grades for the team.
+    uint8[] public momoGrades;
+    // Array that stores all grade bonuses for the team.
+    uint8[10] public gradesBonus;
 
     uint256 internal teamStakeClaimed;
 
@@ -46,15 +61,15 @@ contract NTStakeMulti is NTStakeSingle {
         return true;
     }
 
-    function _getTeamBoostRate(address player, uint16 _staketeam) internal view returns (uint256 _boostRates) {
-        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
-        uint16[] memory _boostIds = _inStakedteam.boostIds;
+    function _getTeamBoost(address player, uint16 _staketeam) internal view returns (uint256 _boostRates) {
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         // Add bonus rewards for each boost owned by the team.
         for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
             if(!chkBoostOwner(player, _boostId)) { _boostRates = 0; return _boostRates; }
-            uint16 _boostRate = gradeStorage.getNftBonus(_boostId); //gradesBonus[_boostGrade];
-            _boostRates = _boostRates + _boostRate;
+            uint8 _boostGrade = momoGrades[_boostId];
+            uint8 _boostRate = gradesBonus[_boostGrade];
+            _boostRates = _boostRate;
         }
         return _boostRates;
     }
@@ -63,17 +78,14 @@ contract NTStakeMulti is NTStakeSingle {
      * @dev Check if the player needs to refresh their staking status.
      */
     function chkRefresh(address player, uint16 _staketeam) internal view returns (bool) {
-        NTSUserManager.StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_staketeam);
-        if(!chkLeaderOwner(player, _staketeam) && _inStakedtmhc.stakeowner == player){
+        if(!chkLeaderOwner(player, _staketeam) && inStakedtmhc[_staketeam].stakeowner == player){
             return true;
         }
 
-        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
-        uint16[] memory _boostIds = _inStakedteam.boostIds;
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
-            NTSUserManager.StakeMOMO memory _inStakedmomo = userStorage.getStakedMOMO(_boostId);
-            if(!chkBoostOwner(player, _boostId) && _inStakedmomo.stakeowner == player){
+            if(!chkBoostOwner(player, _boostId) && inStakedmomo[_boostId].stakeowner == player){
                 return true;
             }
         }
@@ -88,37 +100,36 @@ contract NTStakeMulti is NTStakeSingle {
     * @param _leaderId ID of the leader NFT to stake.
     * @param _boostIds Array of IDs of booster NFTs to stake.
     */
-    function _stakeTeam(address _player, uint16 _leaderId, uint16[] calldata _boostIds) public {
-        require(chkOwnerAll(_player, _leaderId, _boostIds), "Not NFT owner.");
-        NTSUserManager.StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_leaderId);
-        require(_inStakedtmhc.stakeowner != _player, "TMHC already staked.");
+    function _stakeTeam(uint16 _leaderId, uint16[] calldata _boostIds) internal {
+        require(chkOwnerAll(msg.sender, _leaderId, _boostIds), "Not NFT owner.");
+        require(inStakedtmhc[_leaderId].stakeowner != msg.sender, "TMHC already staked.");
         require(_boostIds.length <= 5, "A maximum of 5 booster NFTs are available.");
 
         // Stake each booster NFT.
         for (uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
-            NTSUserManager.StakeMOMO memory _inStakedmomo = userStorage.getStakedMOMO(_boostId);
-            require(_inStakedmomo.stakeowner != _player, "MOMO already staked.");
+            require(inStakedmomo[_boostId].stakeowner != msg.sender, "MOMO already staked.");
 
-            _inStakedmomo.staketeam = _leaderId;
-            _inStakedmomo.stakeowner = _player;
+            inStakedmomo[_boostId].staketeam = _leaderId;
+            inStakedmomo[_boostId].stakeowner = msg.sender;
         }
 
         // Stake the leader NFT.
-        _inStakedtmhc.staketeam = _leaderId;
-        _inStakedtmhc.stakeowner = _player;
+        inStakedtmhc[_leaderId].staketeam = _leaderId;
+        inStakedtmhc[_leaderId].stakeowner = msg.sender;
 
         // Add user to the user list.
-        userStorage.procAddUser(_player);
+        procAddUser();
+
         // Add the staked team to the user's staked team list.
-        userStorage.pushStakedTeam(_player, _leaderId);
+        users[msg.sender].stakedteam.push(_leaderId);
 
         // Add the staked team to the global staked team list.
-        NTSUserManager.StakeTeam memory _newTeam = NTSUserManager.StakeTeam(_player, _boostIds, block.timestamp);
-        userStorage.setInStakedTeam(_leaderId, _newTeam);
+        StakeTeam memory newTeam = StakeTeam(msg.sender, _boostIds, block.timestamp);
+        inStakedteam[_leaderId] = newTeam;
 
         // Emit an event to indicate that a team has been staked.
-        emit StakedTeam(_player, _leaderId, _boostIds);
+        emit StakedTeam(msg.sender, _leaderId, _boostIds);
     }
 
     /**
@@ -129,16 +140,15 @@ contract NTStakeMulti is NTStakeSingle {
     function _calRewardTeam(address player, uint16 _staketeam) internal view returns (uint256 _totalReward) {
         // If the sender is not the stakeowner of the team, return 0.
         if(!chkLeaderOwner(player, _staketeam)) { _totalReward=0; return _totalReward; }
-
-        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
-                // Get the boost IDs and last update block for the staked team.
-        uint256 _lastUpdateTime = _inStakedteam.lastUpdateTime;
+            
+        // Get the boost IDs and last update block for the staked team.
+        uint256 _lastUpdateBlock = inStakedteam[_staketeam].lastUpdateBlock;
 
         // Calculate the base TMHC reward for the team.
-        uint256 _tmhcReward = ((block.timestamp - _lastUpdateTime) * rewardPerHour) / 3600;
+        uint256 _tmhcReward = ((block.timestamp - _lastUpdateBlock) * rewardPerHour) / 3600;
 
         // Add bonus rewards for each boost owned by the team.
-        uint256 _boostRate = _getTeamBoostRate(player, _staketeam);
+        uint256 _boostRate = _getTeamBoost(player, _staketeam);
         if(_boostRate == 0) { _totalReward=0; return _totalReward; }
         _boostRate = _boostRate / 100;
         _totalReward = _tmhcReward + (_tmhcReward * _boostRate);
@@ -150,14 +160,14 @@ contract NTStakeMulti is NTStakeSingle {
     * @dev Calculates the total reward for all staked teams of the caller.
     * @return _TotalReward The total calculated reward for all staked teams of the caller.
     */
-    function _calRewardTeamAll(address _player) internal view returns (uint256 _TotalReward) {
+    function _calRewardTeamAll(address player) internal view returns (uint256 _TotalReward) {
         // Get the IDs of all staked teams owned by the caller.
-        uint16[] memory _myStakeTeam = userStorage.getStakedUserTeam(_player);
+        uint16[] memory _myStakeTeam = users[player].stakedteam;
         uint256 _totalReward = 0;
 
         // Calculate the total reward for all owned staked teams.
         for(uint16 i = 0; i < _myStakeTeam.length; i++) {
-            _totalReward = _totalReward + _calRewardTeam(_player, _myStakeTeam[i]);
+            _totalReward = _totalReward + _calRewardTeam(player, _myStakeTeam[i]);
         }
 
         return _totalReward;
@@ -169,37 +179,41 @@ contract NTStakeMulti is NTStakeSingle {
     */
     function _unsetAllBoost(uint16 _staketeam) internal {
         // Unset all boosts for the staked team.
-        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
-        uint16[] memory _boostIds = _inStakedteam.boostIds;
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
             if(momoToken.ownerOf(_boostId) == msg.sender) {
                 // If the caller is the owner of the boost, unset the boost's staked team.
-                userStorage.delInStakedMOMO(_boostId);
+                delete inStakedmomo[_boostId];
             }
         }
     }
 
-    function _refreshTeam(address _player, uint16 _staketeam) internal {
-        if(chkRefresh(_player, _staketeam)){
-            userStorage.popStakedTeam(_player, _staketeam);
+    function _refreshTeam(uint16 _staketeam) internal {
+        if(chkRefresh(msg.sender, _staketeam)){
+            uint16[] memory _array = users[msg.sender].stakedteam;
+            for(uint i = 0; i < _array.length; i++) {
+                if(_array[i] == _staketeam) {
+                    users[msg.sender].stakedteam[i] = _array[_array.length - 1];
+                    users[msg.sender].stakedteam.pop();
+                    break;
+                }
+            }
             // If the caller has no staked teams, remove their stake from the users list.
-            userStorage.procDelUser(_player);
+            procDelUser();
         }else{
             return;
         }
 
-        NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_staketeam);
-        if(!chkLeaderOwner(_player, _staketeam) && _inStakedteam.stakeowner == _player){
-            userStorage.delInStakedTMHC(_staketeam);
+        if(!chkLeaderOwner(msg.sender, _staketeam) && inStakedtmhc[_staketeam].stakeowner == msg.sender){
+            delete inStakedtmhc[_staketeam];
         }
 
-        uint16[] memory _boostIds = _inStakedteam.boostIds;
+        uint16[] memory _boostIds = inStakedteam[_staketeam].boostIds;
         for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
-            NTSUserManager.StakeMOMO memory _inStakedmomo = userStorage.getStakedMOMO(_boostId);
-            if(!chkBoostOwner(msg.sender, _boostId) && _inStakedmomo.stakeowner == msg.sender){
-                userStorage.delInStakedMOMO(_boostId);
+            if(!chkBoostOwner(msg.sender, _boostId) && inStakedmomo[_boostId].stakeowner == msg.sender){
+                delete inStakedmomo[_boostId];
             }
         }
     }
@@ -207,13 +221,13 @@ contract NTStakeMulti is NTStakeSingle {
     /**
     * @dev Refreshes all staked teams owned by the caller by verifying ownership and updating their boosts.
     */
-    function _refreshAllTeam(address _player) internal {
+    function _refreshAllTeam() internal {
         // Get the IDs of all staked teams owned by the caller.
-        uint16[] memory _myStakeTeam = userStorage.getStakedUserTeam(_player);
+        uint16[] memory _myStakeTeam = users[msg.sender].stakedteam;
 
         // Refresh each staked team owned by the caller.
         for(uint16 i = 0; i < _myStakeTeam.length; i++) {
-            _refreshTeam(_player, _myStakeTeam[i]);
+            _refreshTeam(_myStakeTeam[i]);
         }
     }
 
@@ -228,7 +242,7 @@ contract NTStakeMulti is NTStakeSingle {
             // Transfer the reward to the caller.
             rewardVault.transferToken(_player, _myReward);
             // Update the last update block for the staked team.
-            userStorage.setInStakedTeamTime(_leaderId);
+            inStakedteam[_leaderId].lastUpdateBlock = block.timestamp;
             // Emit a RewardPaid event to indicate that the reward has been paid.
             teamStakeClaimed = teamStakeClaimed + _myReward;
             emit RewardPaid(_player, _myReward);
@@ -240,7 +254,7 @@ contract NTStakeMulti is NTStakeSingle {
     */
     function _claimTeamAll(address _player) internal {
         // claim for each staked team owned by the caller.
-        uint16[] memory _myStakeTeam = userStorage.getStakedUserTeam(_player);
+        uint16[] memory _myStakeTeam = users[_player].stakedteam;
         for(uint16 i = 0; i < _myStakeTeam.length; i++) {
             _claimTeam(_player, _myStakeTeam[i]);
         }
@@ -250,33 +264,38 @@ contract NTStakeMulti is NTStakeSingle {
     * @dev Unstakes the teams with the given leader NFT IDs owned by the caller, calculates the reward for each team, transfers the rewards to the caller, removes the staked teams and associated boosts from the caller's stakedteam array, and emits an unStakedTeam event for each team that was unstaked.
     * @param _leaderIds An array of leader NFT IDs corresponding to the staked teams to be unstaked.
     */
-    function _unStakeTeam(address _player, uint16[] calldata _leaderIds) internal {
+    function _unStakeTeam(uint16[] calldata _leaderIds) internal {
         for(uint16 i = 0; i < _leaderIds.length; i++) {
             uint16 _leaderId = _leaderIds[i];
             // Check that the caller is the owner of the TMHC NFT, is the owner of the staked team, and the TMHC NFT is on the staked team.
-            require(tmhcToken.balanceOf(_player, _leaderId) == 1, "not TMHC owner.");
-            NTSUserManager.StakeTeam memory _inStakedteam = userStorage.getInStakedTeam(_leaderId);
-            require(_inStakedteam.stakeowner == _player, "not Team owner.");
-            NTSUserManager.StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_leaderId);
-            require(_inStakedtmhc.staketeam != 0 , "TMHC is not on the team.");
+            require(tmhcToken.balanceOf(msg.sender, _leaderId) == 1, "not TMHC owner.");
+            require(inStakedteam[_leaderId].stakeowner == msg.sender, "not Team owner.");
+            require(inStakedtmhc[_leaderId].staketeam != 0 , "TMHC is not on the team.");
             // Delete TMHC data
-            userStorage.delInStakedTMHC(_leaderId);
+            delete inStakedtmhc[_leaderId];
             // Calculate the reward for the staked team.
-            uint256 _myReward = _calRewardTeam(_player, _leaderId);
+            uint256 _myReward = _calRewardTeam(msg.sender, _leaderId);
             // Transfer the reward to the caller.
-            rewardVault.transferToken(_player, _myReward);
+            rewardVault.transferToken(msg.sender, _myReward);
             // Emit a RewardPaid event to indicate that the reward has been paid.
-            emit RewardPaid(_player, _myReward);
+            emit RewardPaid(msg.sender, _myReward);
 
             // Remove the staked team from the caller's stakedteam array.
-            userStorage.popStakedTeam(_player, _leaderId);
+            uint16[] memory _array = users[msg.sender].stakedteam;
+            for (uint ii = 0; ii < _array.length; ii++) {
+                if (_array[ii] == _leaderId) {
+                    users[msg.sender].stakedteam[ii] = _array[_array.length - 1];
+                    users[msg.sender].stakedteam.pop();
+                    break;
+                }
+            }
 
             // Unset all boosts associated with the staked team.
             _unsetAllBoost(_leaderId);
             // Delete the staked user from the user mapping if the user no longer has any staked teams.
-            userStorage.procDelUser(_player);
+            procDelUser();
             // Emit an unStakedTeam event to indicate that the team has been unstaked.
-            emit unStakedTeam(_player, _leaderId);
+            emit unStakedTeam(msg.sender, _leaderId);
         }
     }
 
@@ -285,7 +304,7 @@ contract NTStakeMulti is NTStakeSingle {
     * @return _totalUnClaim The total amount of unclaimed rewards.
     */
     function _getTeamUnClaim() internal view returns (uint256 _totalUnClaim) {
-        address[] memory _usersArray = userStorage.getUsersArray();
+        address[] memory _usersArray = usersArray;
         for(uint256 i = 0; i < _usersArray.length; i++)
         {   
             address _player = _usersArray[i];
