@@ -158,6 +158,13 @@ contract NTStakeSingle is NTSBase{
         }
     }
 
+    function _claimBatch(address _player, uint _tokenType, uint16[] calldata _tokenIds) internal {
+        for(uint16 i = 0; i < _tokenIds.length; i++)
+        {
+            _claim(_player, 0, _tokenIds[i]);
+        }
+    }
+
     // Step4. Claim reward all stake
     /**
     * @dev Claims the rewards for all staked tokens of the caller and transfers them to the caller's address.

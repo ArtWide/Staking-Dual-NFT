@@ -235,6 +235,13 @@ contract NTStakeMulti is NTStakeSingle {
         }
     }
 
+    function _claimTeamBatch(address _player, uint16[] calldata _leaderIds) internal{
+        for(uint16 i = 0; i < _leaderIds.length; i++) {
+            uint16 _leaderId = _leaderIds[i];
+            _claimTeam(_player, _leaderId);
+        }
+    }
+
     /**
     * @dev Calculates the total reward for all staked teams owned by the caller, transfers the reward to the caller using the transferToken function of the ERC-20 reward token, updates the last update block for each staked team, and emits a RewardPaid event.
     */

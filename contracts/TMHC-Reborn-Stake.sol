@@ -108,6 +108,11 @@ contract TMHCRebornStakeU1 is PermissionsEnumerable, Initializable, ReentrancyGu
         _claim(msg.sender, _tokenType, _tokenId);
     }
 
+    function claimBatch(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
+        require(!PauseClaim, "The claim is currently paused.");
+        _claimBatch(msg.sender, _tokenType, _tokenIds);
+    }
+
     /**
     * @dev Claims the rewards for all staked tokens of the caller.
     */
@@ -263,6 +268,11 @@ contract TMHCRebornStakeU1 is PermissionsEnumerable, Initializable, ReentrancyGu
     function adminClaim(address _player, uint _tokenType, uint16 _tokenId) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         require(!PauseClaim, "The claim is currently paused.");
         _claim(_player, _tokenType, _tokenId);
+    }
+
+    function adminClaimBatch(address _player, uint _tokenType, uint16[] calldata _tokenIds) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        require(!PauseClaim, "The claim is currently paused.");
+        _claimBatch(_player, _tokenType, _tokenIds);
     }
 
     /**
