@@ -19,11 +19,6 @@ contract NTStakeMulti is NTStakeSingle {
     // Event emitted when a user unstakes their team.
     event unStakedTeam(address indexed user, uint16 indexed leaderId);
 
-    // Array that stores all possible grades for the team.
-    uint8[] public momoGrades;
-    // Array that stores all grade bonuses for the team.
-    uint8[10] public gradesBonus;
-
     uint256 internal teamStakeClaimed;
 
     /**
@@ -58,9 +53,8 @@ contract NTStakeMulti is NTStakeSingle {
         for(uint16 i = 0; i < _boostIds.length; i++) {
             uint16 _boostId = _boostIds[i];
             if(!chkBoostOwner(player, _boostId)) { _boostRates = 0; return _boostRates; }
-            uint8 _boostGrade = momoGrades[_boostId];
-            uint8 _boostRate = gradesBonus[_boostGrade];
-            _boostRates = _boostRate;
+            uint16 _boostRate = gradeStorage.getNftBonus(_boostId); //gradesBonus[_boostGrade];
+            _boostRates = _boostRates + _boostRate;
         }
         return _boostRates;
     }

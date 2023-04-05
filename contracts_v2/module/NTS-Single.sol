@@ -87,6 +87,8 @@ contract NTStakeSingle is NTSBase{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
             }
+            // Calculate the reward based on the stake time and rewardPerHourSub.
+            _Reward = ((_stakeTime * rewardPerHour) / 3600);
         }else if(_tokenType==1){
             // MOMO
             NTSUserManager.StakeMOMO memory _inStakedmomo = userStorage.getStakedMOMO(_tokenId);
@@ -98,9 +100,10 @@ contract NTStakeSingle is NTSBase{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
             }
+            // Calculate the reward based on the stake time and rewardPerHourSub.
+            _Reward = ((_stakeTime * rewardPerHourSub) / 3600);
         }
-        // Calculate the reward based on the stake time and rewardPerHourSub.
-        _Reward = ((_stakeTime * rewardPerHourSub) / 3600);
+
         return _Reward;
     }
 
