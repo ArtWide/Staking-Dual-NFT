@@ -22,6 +22,7 @@ artifacts/
 artifacts_forge/
 
 # files
+deployArgs.json
 *.env
 *.log
 *.tsbuildinfo
