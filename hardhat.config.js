@@ -9,7 +9,4 @@ module.exports = {
       },
     },
   },
-    paths: {
-    sources: "./contract_v2/",
-  },
 };
