@@ -8,6 +8,7 @@
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "./GradeStorage.sol";
 import "./RewardVault.sol";
 import "./UserStorage.sol";
 
@@ -20,6 +21,8 @@ contract NTSBase {
     NTSRewardVault public rewardVault;
 
     NTSUserManager public userStorage;
+
+    NTSGradeStorage public gradeStorage;
     
     // Reward per Hour - TMHC
     uint256 public rewardPerHour;    

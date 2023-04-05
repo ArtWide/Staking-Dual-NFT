@@ -28,14 +28,16 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
                     Constructor + initializer logic
     //////////////////////////////////////////////////////////////*/
 
-    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, NTSUserManager _userStorage, uint256 _rewardPerHour, address _owner) initializer {
+    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, NTSUserManager _userStorage, NTSGradeStorage _gradeStorage, uint256 _rewardPerHour, uint256 _rewardPerHourSub, address _owner) initializer {
         owner = _owner;
         _setupRole(DEFAULT_ADMIN_ROLE, _owner);
         tmhcToken = _EditionToken;
         momoToken = _NFTtoken;
         rewardVault = _RewardVault;
         userStorage = _userStorage;
+        gradeStorage = _gradeStorage;
         rewardPerHour = _rewardPerHour;
+        rewardPerHourSub = _rewardPerHourSub;
         PauseStake = false;
         PauseClaim = false;
     }
@@ -213,27 +215,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
     /*///////////////////////////////////////////////////////////////
                             Admin Function
     //////////////////////////////////////////////////////////////*/
-    /**
-    * @dev Sets the MOMO grades to be used for calculating the bonus rate.
-    * @param _momogrades An array of MOMO grades to be added to the existing grades.
-    * Requirements:
-    * - The function can only be called by an account with the DEFAULT_ADMIN_ROLE.
-    */
-    function setAddMomoGrades(uint8[] calldata _momogrades) external onlyRole(DEFAULT_ADMIN_ROLE){
-        for(uint256 i = 0; i < _momogrades.length; i++){
-            momoGrades.push(_momogrades[i]);
-        }
-    }
 
-    /**
-    * @dev Sets the bonus rates for each token grade.
-    * @param _gradesbonus An array of bonus rates for each token grade.
-    * Requirements:
-    * - The function can only be called by an account with the DEFAULT_ADMIN_ROLE.
-    */
-    function setGradesBonus(uint8[10] calldata _gradesbonus) external onlyRole(DEFAULT_ADMIN_ROLE){
-        gradesBonus = _gradesbonus;
-    }
 
     /**
     * @dev Sets the reward amount per hour for the stake.
