@@ -82,12 +82,12 @@ contract NTStakeSingle is NTSBase{
             // Check if the token is owned by the caller and if it is already staked.
             if(tmhcToken.balanceOf(player, _tokenId) == 1 && _inStakedtmhc.stakeowner == player && _inStakedtmhc.staketeam == 0){
                 // If the token is already staked, calculate the stake time.
-                _stakeTime = _stakeTime + (block.timestamp - _inStakedtmhc.lastUpdateTime);
+                _stakeTime = block.timestamp - _inStakedtmhc.lastUpdateTime;
             }else{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;
             }
-            // Calculate the reward based on the stake time and rewardPerHourSub.
+            // Calculate the reward based on the stake time and rewardPerHour.
             _Reward = ((_stakeTime * rewardPerHour) / 3600);
         }else if(_tokenType==1){
             // MOMO
@@ -95,7 +95,7 @@ contract NTStakeSingle is NTSBase{
             // Check if the token is owned by the caller and if it is already staked.
             if(momoToken.ownerOf(_tokenId) == player && _inStakedmomo.stakeowner == player && _inStakedmomo.staketeam == 0){
                 // If the token is already staked, calculate the stake time.
-                _stakeTime = _stakeTime + (block.timestamp - _inStakedmomo.lastUpdateTime);
+                _stakeTime = block.timestamp - _inStakedmomo.lastUpdateTime;
             }else{
                 // If the token is not owned by the caller or not staked, return 0 as the reward.
                 return 0;

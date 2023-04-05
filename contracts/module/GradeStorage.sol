@@ -11,7 +11,7 @@ import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 
 contract NTSGradeStorage is PermissionsEnumerable{
     uint8[] nftGrades;
-    uint16[6] boostBonus = [10,30,100,300];
+    uint16[5] boostBonus = [10,30,100,300,0];
 
     constructor(address _admin) {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -20,12 +20,6 @@ contract NTSGradeStorage is PermissionsEnumerable{
     /*///////////////////////////////////////////////////////////////
                             Admin Function
     //////////////////////////////////////////////////////////////*/
-    function setNftGrades(uint8[] calldata _grades) external onlyRole(DEFAULT_ADMIN_ROLE) { 
-        for(uint256 i = 0; i < _grades.length; i++){
-            nftGrades.push(_grades[i]);
-        }
-    }
-
     function getNftGrade(uint16 _tokenId) public view returns(uint8 _grade){
         return nftGrades[_tokenId];
     }
@@ -57,7 +51,7 @@ contract NTSGradeStorage is PermissionsEnumerable{
     * Requirements:
     * - The function can only be called by an account with the DEFAULT_ADMIN_ROLE.
     */
-    function setGradesBonus(uint8[4] calldata _gradesbonus) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function setGradesBonus(uint8[5] calldata _gradesbonus) external onlyRole(DEFAULT_ADMIN_ROLE){
         boostBonus = _gradesbonus;
     }
 }
