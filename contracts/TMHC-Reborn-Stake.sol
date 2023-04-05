@@ -230,6 +230,11 @@ contract TMHCRebornStakeU1 is PermissionsEnumerable, Initializable, ReentrancyGu
         rewardPerHourSub = _rewardPerHourSub;
     }
 
+    function claimAgent(address _player, uint _tokenType, uint16 _tokenId) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE){
+        require(!PauseClaim, "The claim is currently paused.");
+        _claim(_player, _tokenType, _tokenId);
+    }
+
     /**
     * @dev Pauses the staking pool.
     * @param _status The status of the pause.
