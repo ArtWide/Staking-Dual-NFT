@@ -26,7 +26,7 @@ contract TMHCRebornStakeR7 is PermissionsEnumerable, Initializable, ReentrancyGu
 
     /*///////////////////////////////////////////////////////////////
                     Constructor + initializer logic
-    //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/ 
 
     constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, NTSUserManager _userStorage, NTSGradeStorage _gradeStorage, uint256 _rewardPerHour, uint256 _rewardPerHourSub, address _owner) initializer {
         owner = _owner;

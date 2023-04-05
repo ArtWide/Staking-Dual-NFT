@@ -20,7 +20,7 @@ contract NTSGradeStorage is PermissionsEnumerable{
     /*///////////////////////////////////////////////////////////////
                             Admin Function
     //////////////////////////////////////////////////////////////*/
-    function setNftGrades(uint8[] calldata _grades) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setNftGrades(uint8[] calldata _grades) external onlyRole(DEFAULT_ADMIN_ROLE) { 
         for(uint256 i = 0; i < _grades.length; i++){
             nftGrades.push(_grades[i]);
         }
