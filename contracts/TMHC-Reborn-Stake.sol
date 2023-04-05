@@ -16,8 +16,8 @@ import "./module/NTS-Multi.sol";
 import "./module/RewardVault.sol";
 
 
-contract TMHCRebornStakeU1 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
-    // TMHC Reborn Stake Upgradeable Contract Release version 0.1
+contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGuard, NTStakeMulti{
+    // TMHC Reborn Stake Upgradeable Contract Release version 0.2
     // Staking pool onwer / admin
     address private owner;
     // Operation status of the Pool.
