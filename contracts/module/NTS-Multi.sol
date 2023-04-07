@@ -88,7 +88,7 @@ contract NTStakeMulti is NTStakeSingle {
     * @param _leaderId ID of the leader NFT to stake.
     * @param _boostIds Array of IDs of booster NFTs to stake.
     */
-    function _stakeTeam(address _player, uint16 _leaderId, uint16[] calldata _boostIds) public {
+    function _stakeTeam(address _player, uint16 _leaderId, uint16[] calldata _boostIds) internal {
         require(chkOwnerAll(_player, _leaderId, _boostIds), "Not NFT owner.");
         NTSUserManager.StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_leaderId);
         require(_inStakedtmhc.stakeowner != _player, "TMHC already staked.");
