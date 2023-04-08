@@ -29,11 +29,9 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
                     Constructor + initializer logic
     //////////////////////////////////////////////////////////////*/ 
 
-    constructor(IERC1155 _EditionToken, IERC721 _NFTtoken, NTSRewardVault _RewardVault, NTSUserManager _userStorage, NTSGradeStorage _gradeStorage, uint256 _rewardPerHour, uint256 _rewardPerHourSub, address _owner) initializer {
+    constructor(NTSRewardVault _RewardVault, NTSUserManager _userStorage, NTSGradeStorage _gradeStorage, uint256 _rewardPerHour, uint256 _rewardPerHourSub, address _owner) initializer {
         owner = _owner;
         _setupRole(DEFAULT_ADMIN_ROLE, _owner);
-        tmhcToken = _EditionToken;
-        momoToken = _NFTtoken;
         rewardVault = _RewardVault;
         userStorage = _userStorage;
         gradeStorage = _gradeStorage;
@@ -41,6 +39,16 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
         rewardPerHourSub = _rewardPerHourSub;
         PauseStake = false;
         PauseClaim = false;
+    }
+    /*///////////////////////////////////////////////////////////////
+                            Admin Staking Setup
+    //////////////////////////////////////////////////////////////*/
+    function setEditionToken(IERC1155 _EditionToken) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        tmhcToken = _EditionToken;
+    }
+
+    function setNFTtoken(IERC721 _NFTtoken) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        momoToken = _NFTtoken;
     }
 
     /*///////////////////////////////////////////////////////////////
