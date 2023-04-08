@@ -8,11 +8,12 @@
 pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@thirdweb-dev/contracts/extension/Multicall.sol";
 import "./GradeStorage.sol";
 import "./RewardVault.sol";
 import "./UserStorage.sol";
 
-contract NTSBase {
+contract NTSBase is Multicall {
     // Staking target ERC1155 NFT contract - TMHC
     IERC1155 public tmhcToken;
     // Staking target ERC721 NFT contract - MOMO

@@ -8,8 +8,9 @@
 pragma solidity ^0.8.17;
 
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
+import "@thirdweb-dev/contracts/extension/Multicall.sol";
 
-contract NTSGradeStorage is PermissionsEnumerable{
+contract NTSGradeStorage is PermissionsEnumerable, Multicall{
     uint8[] nftGrades;
     uint16[5] boostBonus = [10,30,100,300,0];
 

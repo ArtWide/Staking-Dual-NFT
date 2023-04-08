@@ -8,8 +8,9 @@
 pragma solidity ^0.8.17;
 
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
+import "@thirdweb-dev/contracts/extension/Multicall.sol";
 
-contract NTSUserManager is PermissionsEnumerable{
+contract NTSUserManager is PermissionsEnumerable, Multicall{
     constructor(address _admin) {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     }
