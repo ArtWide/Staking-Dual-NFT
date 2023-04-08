@@ -171,6 +171,11 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
         _claimTeam(msg.sender, _leaderId);
     }
 
+    function claimTeamBatch(uint16[] calldata _leaderIds) external nonReentrant{
+        require(!PauseClaim, "The claim is currently paused.");
+        _claimTeamBatch(msg.sender, _leaderIds);
+    }
+
     /**
     * @dev Claims the rewards for all staked team leaders and their boosts for the caller.
     */
@@ -277,7 +282,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     * - The caller must have the DEFAULT_ADMIN_ROLE.
     * - Claim must not be paused.
     */
-    function adminClaimAll(address _player) external nonReentrant {
+    function adminClaimAll(address _player) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         require(!PauseClaim, "The claim is currently paused.");
         _claimAll(_player);
     }
@@ -290,9 +295,14 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     * - The caller must have the DEFAULT_ADMIN_ROLE.
     * - Claim must not be paused.
     */
-    function adminClaimTeam(address _player, uint16 _leaderId) external nonReentrant{
+    function adminClaimTeam(address _player, uint16 _leaderId) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant{
         require(!PauseClaim, "The claim is currently paused.");
         _claimTeam(_player, _leaderId);
+    }
+
+    function adminClaimTeamBatch(address _player, uint16[] calldata _leaderIds) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant{
+        require(!PauseClaim, "The claim is currently paused.");
+        _claimTeamBatch(_player, _leaderIds);
     }
 
     /**
