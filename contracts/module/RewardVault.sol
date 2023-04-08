@@ -25,9 +25,9 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      * @dev Initializes the contract by setting the acceptedToken and granting the DEFAULT_ADMIN_ROLE to the deployer.
      * @param acceptedToken The token that will be accepted and transferred as reward.
      */
-    constructor(IERC20 acceptedToken) {
+    constructor(IERC20 acceptedToken, address _admin) {
         _acceptedToken = acceptedToken;
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
     /**
