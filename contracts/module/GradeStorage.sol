@@ -39,9 +39,18 @@ contract NTSGradeStorage is PermissionsEnumerable{
     * Requirements:
     * - The function can only be called by an account with the DEFAULT_ADMIN_ROLE.
     */
-    function setAddMomoGrades(uint8[] calldata _momogrades) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function setMomoGrades(uint8[] calldata _momogrades) external onlyRole(DEFAULT_ADMIN_ROLE){
         for(uint256 i = 0; i < _momogrades.length; i++){
             nftGrades.push(_momogrades[i]);
+        }
+    }
+
+    function setEditMomoGrades(uint256 startIdx, uint256 endIdx, uint8[] calldata newGrades) external onlyRole(DEFAULT_ADMIN_ROLE){
+        require(startIdx < endIdx, "Invalid range");
+        require(endIdx <= nftGrades.length, "Out of bounds");
+
+        for (uint256 i = startIdx; i < endIdx; i++) {
+            nftGrades[i] = newGrades[i - startIdx];
         }
     }
 

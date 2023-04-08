@@ -229,26 +229,4 @@ contract NTSUserManager is PermissionsEnumerable{
             }
         }
     }
-
-    function resetInStakedTMHC() external onlyRole(DEFAULT_ADMIN_ROLE){
-        delete inStakedtmhc;
-    }
-
-    function resetInStakedMOMO() external onlyRole(DEFAULT_ADMIN_ROLE){
-        delete inStakedmomo;
-    }
-
-    function resetInStakedTEAM() external onlyRole(DEFAULT_ADMIN_ROLE){
-        delete inStakedteam;
-    }
-
-    function resetUsers() external onlyRole(DEFAULT_ADMIN_ROLE){
-        address[] memory userKeys = getUsersArray();
-        for (uint256 i = 0; i < userKeys.length; i++) {
-            delete users[userKeys[i]];
-        }
-        delete usersArray;
-    }
-
-
 }
