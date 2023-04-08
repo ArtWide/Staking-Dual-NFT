@@ -93,6 +93,8 @@ contract NTStakeMulti is NTStakeSingle {
         NTSUserManager.StakeTMHC memory _inStakedtmhc = userStorage.getStakedTMHC(_leaderId);
         require(_inStakedtmhc.stakeowner != _player, "TMHC already staked.");
         require(_boostIds.length <= 5, "A maximum of 5 booster NFTs are available.");
+        require(_boostIds.length >= 1, "A minimum of 1 booster NFTs are available.");
+
 
         // Stake each booster NFT.
         for (uint16 i = 0; i < _boostIds.length; i++) {
