@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 interface IERC1155 {
     function balanceOf(address account, uint256 id) external view returns (uint256);
-    function isApprovedForAll(address account, address operator) external view returns (bool);
 }
 
 contract NFTValidator {
@@ -19,13 +18,9 @@ contract NFTValidator {
     function isNFTOwner(address userAddress, uint256 tokenId) external {
         // Check if the user owns the specified tokenId
         uint256 balance = erc1155Contract.balanceOf(userAddress, tokenId);
-        if (balance > 0) {
-            // Check if the user has approved the contract to spend their NFTs
-            bool isApproved = erc1155Contract.isApprovedForAll(userAddress, address(this));
-            if (isApproved) {
-                // Emit the NFTOwner event
-                emit NFTOwner(userAddress, tokenId);
-            }
-        }
+        require(balance > 0, "User is not an NFT owner");
+
+        // Emit the NFTOwner event
+        emit NFTOwner(userAddress, tokenId);
     }
 }
