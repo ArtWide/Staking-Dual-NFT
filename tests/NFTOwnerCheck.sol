@@ -22,11 +22,14 @@ contract NFTValidator {
     }
 
     function isNFTOwner(address userAddress, uint256[] memory tokenIds) external {
+        // Create an array of user addresses with the same length as tokenIds
+        address[] memory accounts = new address[](tokenIds.length);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            accounts[i] = userAddress;
+        }
+
         // Check if the user owns the specified tokenIds
-        uint256[] memory balances = erc1155Contract.balanceOfBatch(
-            new address[](tokenIds.length),
-            tokenIds
-        );
+        uint256[] memory balances = erc1155Contract.balanceOfBatch(accounts, tokenIds);
         for (uint256 i = 0; i < balances.length; i++) {
             require(balances[i] > 0, "User is not an NFT owner");
         }
