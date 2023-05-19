@@ -11,12 +11,13 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
+import "@thirdweb-dev/contracts/extension/Multicall.sol";
 
 /**
  * @title NTSRewardVault
  * @dev Contract to manage the rewards tokens accepted and transferred in the system.
  */
-contract NTSRewardVault is PermissionsEnumerable {
+contract NTSRewardVault is PermissionsEnumerable, Multicall {
     using SafeERC20 for IERC20;
     IERC20 private _acceptedToken;
 
@@ -24,9 +25,9 @@ contract NTSRewardVault is PermissionsEnumerable {
      * @dev Initializes the contract by setting the acceptedToken and granting the DEFAULT_ADMIN_ROLE to the deployer.
      * @param acceptedToken The token that will be accepted and transferred as reward.
      */
-    constructor(IERC20 acceptedToken) {
+    constructor(IERC20 acceptedToken, address _admin) {
         _acceptedToken = acceptedToken;
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
     /**
