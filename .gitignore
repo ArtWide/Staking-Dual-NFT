@@ -74,3 +74,6 @@ artifacts
 README.md
 deployArgs.json
 deployArgs.json
+package.json
+package.json
+hardhat.config.js

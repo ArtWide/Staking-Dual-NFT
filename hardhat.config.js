@@ -9,4 +9,7 @@ module.exports = {
       },
     },
   },
+  paths: {
+    sources: "./contract-eth",
+  },
 };
