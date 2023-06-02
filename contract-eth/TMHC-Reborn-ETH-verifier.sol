@@ -19,6 +19,12 @@ contract NFTHolderCheck is PermissionsEnumerable, Multicall{
     address public erc1155NftAddress;
     address public erc721NftAddress;
 
+    event StakeERC721(address indexed player, uint256[] tokenIds);
+    event StakeERC1155(address indexed player, uint256[] tokenIds);
+    event ClaimERC721(address indexed player, uint256[] tokenIds);
+    event ClaimERC1155(address indexed player, uint256[] tokenIds);
+    event StakeTeam();
+
     event ERC1155NftHolder(address indexed holder, uint256[] tokenIds);
     event ERC721NftHolder(address indexed holder, uint256[] tokenIds);
 
@@ -32,6 +38,10 @@ contract NFTHolderCheck is PermissionsEnumerable, Multicall{
 
     function updateERC721NftAddress(address _newAddress) external{
         erc721NftAddress = _newAddress;
+    }
+
+    function Stake(address _player, uint _tokenType, uint16[] calldata _tokenIds) external {
+
     }
 
     function checkERC1155NftHolder(address _holder, uint256[] calldata _tokenIds) external {

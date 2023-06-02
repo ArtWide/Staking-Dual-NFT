@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@thirdweb-dev/contracts/extension/Multicall.sol";
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 
 import "./module/NTS-Multi.sol";
@@ -43,6 +44,8 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     /*///////////////////////////////////////////////////////////////
                             Admin Staking Setup
     //////////////////////////////////////////////////////////////*/
+    bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
+
     function setEditionToken(IERC1155 _EditionToken) external onlyRole(DEFAULT_ADMIN_ROLE) {
         tmhcToken = _EditionToken;
     }
@@ -101,7 +104,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _tokenType The type of the tokens to be staked (0 for TMHC, 1 for MOMO).
     * @param _tokenIds An array of token IDs to be staked.
     */
-    function stake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
+    function stake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseStake, "Stacking pool is currently paused.");
         _stake(msg.sender, _tokenType, _tokenIds);
     }
@@ -116,7 +119,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
         _claim(msg.sender, _tokenType, _tokenId);
     }
 
-    function claimBatch(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
+    function claimBatch(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseClaim, "The claim is currently paused.");
         _claimBatch(msg.sender, _tokenType, _tokenIds);
     }
@@ -124,7 +127,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     /**
     * @dev Claims the rewards for all staked tokens of the caller.
     */
-    function claimAll() external nonReentrant {
+    function claimAll() external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseClaim, "The claim is currently paused.");
         _claimAll(msg.sender);
     }
@@ -134,7 +137,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _tokenType The type of the tokens to be unstaked (0 for TMHC, 1 for MOMO).
     * @param _tokenIds An array of token IDs to be unstaked.
     */
-    function unStake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant {
+    function unStake(uint _tokenType, uint16[] calldata _tokenIds) external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseStake, "Stacking pool is currently paused.");
         _unStake(msg.sender, _tokenType, _tokenIds);
     }
@@ -165,7 +168,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @param _leaderId The ID of the team leader to be staked.
     * @param _boostIds An array of IDs of the boosts to be staked.
     */
-    function stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) external nonReentrant{
+    function stakeTeam(uint16 _leaderId ,uint16[] calldata _boostIds) external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseStake, "Stacking pool is currently paused.");
         _stakeTeam(msg.sender, _leaderId, _boostIds);
     }
@@ -179,7 +182,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
         _claimTeam(msg.sender, _leaderId);
     }
 
-    function claimTeamBatch(uint16[] calldata _leaderIds) external nonReentrant{
+    function claimTeamBatch(uint16[] calldata _leaderIds) external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseClaim, "The claim is currently paused.");
         _claimTeamBatch(msg.sender, _leaderIds);
     }
@@ -196,7 +199,7 @@ contract TMHCRebornStakeU2 is PermissionsEnumerable, Initializable, ReentrancyGu
     * @dev Unstakes the specified team leaders and boosts for the caller.
     * @param _leaderIds An array of IDs of the team leaders to be unstaked.
     */
-    function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant{
+    function unStakeTeam(uint16[] calldata _leaderIds) external nonReentrant onlyRole(FACTORY_ROLE){
         require(!PauseStake, "Stacking pool is currently paused.");
         _unStakeTeam(msg.sender, _leaderIds);
     }
