@@ -29,11 +29,5 @@ contract NTSBase is Multicall {
     uint256 public rewardPerHour;    
     // Reward per Hour - MOMO
     uint256 public rewardPerHourSub;
-
-
-    event Staked(address indexed user, uint tokenType, uint16 [] indexed tokenId);       
-    event unStaked(address indexed user, uint tokenType, uint16[] boostId);    
-    event RewardPaid(address indexed user, uint256 reward);
-
 }
 
