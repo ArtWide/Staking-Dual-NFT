@@ -62,7 +62,7 @@ contract StakeEventLogger is PermissionsEnumerable, Multicall{
         emit UnstakedTeam(user, leaderId, boostIds);
     }
 
-    function RewardPaid(address user, uint256 reward) external onlyRole(FACTORY_ROLE){
+    function RewardPay(address user, uint256 reward) external onlyRole(FACTORY_ROLE){
         emit RewardPaid(user, reward);
     }
 }
