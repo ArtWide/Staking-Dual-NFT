@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
+
+import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
+import "@thirdweb-dev/contracts/extension/Multicall.sol";
+
 /* 
 //    _______ _______ ___ ___ _______ ______  ___     ___ ______  _______     ___     _______ _______  _______ 
 //   |   _   |   _   |   Y   |   _   |   _  \|   |   |   |   _  \|   _   |   |   |   |   _   |   _   \|   _   |
@@ -9,8 +13,6 @@ pragma solidity ^0.8.17;
 //   |::.. . |::.. . |\:.. ./|::.. . |::.|   |::.. . |::.|::.|   |::.. . |   |::.. . |::.|:. |::.. .  |::.. . |
 //   `-------`-------' `---' `-------`--- ---`-------`---`--- ---`-------'   `-------`--- ---`-------'`-------'
 */
-import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
-import "@thirdweb-dev/contracts/extension/Multicall.sol";
 
 contract StakeEventLogger is PermissionsEnumerable, Multicall{
     event StakedTMHC(address indexed user, uint16[] tokenIds);
