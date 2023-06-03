@@ -27,9 +27,9 @@ contract StakeEventLogger is PermissionsEnumerable, Multicall{
 
     bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
 
-    constructor(address adminAddr) {
-        _setupRole(DEFAULT_ADMIN_ROLE, adminAddr);
-        _setupRole(FACTORY_ROLE, adminAddr);
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(FACTORY_ROLE, msg.sender);
     }
 
     function stakeTMHC(address user, uint16[] memory tokenIds) external onlyRole(FACTORY_ROLE){
