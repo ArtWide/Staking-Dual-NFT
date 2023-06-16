@@ -31,6 +31,7 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
     using SafeERC20 for IERC20;
     IERC20 private _acceptedToken;
     uint256 private payId = 0;
+    bytes32 private constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
 
     event RewardPaid(uint256 payId, address user, uint256 reward);
 
@@ -38,9 +39,10 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      * @dev Initializes the contract by setting the acceptedToken and granting the DEFAULT_ADMIN_ROLE to the deployer.
      * @param acceptedToken The token that will be accepted and transferred as reward.
      */
-    constructor(IERC20 acceptedToken, address _admin) {
+    constructor(IERC20 acceptedToken) {
         _acceptedToken = acceptedToken;
-        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(FACTORY_ROLE, msg.sender);
     }
 
     /**
@@ -57,7 +59,7 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      * @param amount The amount of tokens to be transferred.    
      * @param _payId.
      */
-    function transferToken(address recipient, uint256 amount, uint256 _payId) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function transferToken(address recipient, uint256 amount, uint256 _payId) external onlyRole(FACTORY_ROLE){
         require(_payId + 1 == payId, "Incorrect payId");
         _acceptedToken.safeTransfer(recipient, amount);
         payId += 1;
@@ -71,13 +73,5 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      */
     function getTokenBalance() public view returns (uint256) {
         return _acceptedToken.balanceOf(address(this));
-    }
-
-    /**
-     * @dev Allows the DEFAULT_ADMIN_ROLE to set a new address to the DEFAULT_ADMIN_ROLE.
-     * @param _address The address to which the DEFAULT_ADMIN_ROLE will be granted.
-     */
-    function setRole(address _address) external onlyRole(DEFAULT_ADMIN_ROLE){
-        _setupRole(DEFAULT_ADMIN_ROLE, _address);
     }
 }
