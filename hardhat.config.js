@@ -10,6 +10,6 @@ module.exports = {
     },
   },
   paths: {
-    sources: "./contract-eventlogger",
+    sources: "./contracts-matic",
   },
 };
