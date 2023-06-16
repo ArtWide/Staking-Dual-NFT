@@ -30,6 +30,9 @@ import "@thirdweb-dev/contracts/extension/Multicall.sol";
 contract NTSRewardVault is PermissionsEnumerable, Multicall {
     using SafeERC20 for IERC20;
     IERC20 private _acceptedToken;
+    uint256 private payId = 0;
+
+    event RewardPaid(uint256 payId, address user, uint256 reward);
 
     /**
      * @dev Initializes the contract by setting the acceptedToken and granting the DEFAULT_ADMIN_ROLE to the deployer.
@@ -55,7 +58,11 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      * @param _payId.
      */
     function transferToken(address recipient, uint256 amount, uint256 _payId) external onlyRole(DEFAULT_ADMIN_ROLE){
+        require(_payId + 1 == payId, "Incorrect payId");
         _acceptedToken.safeTransfer(recipient, amount);
+        payId += 1;
+
+        emit RewardPaid(_payId, recipient, amount);
     }
 
     /**
