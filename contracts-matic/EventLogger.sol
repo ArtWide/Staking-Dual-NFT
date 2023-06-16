@@ -23,7 +23,7 @@ contract StakeEventLogger is PermissionsEnumerable, Multicall{
     event UnstakedMOMO(address indexed user, uint16[] tokenIds);
     event StakedTeam(address indexed user, uint16 leaderId, uint16[] boostIds);
     event UnstakedTeam(address indexed user, uint16 leaderId, uint16[] boostIds);
-    event RewardPaid(address indexed user, uint256 payId, uint256 reward);
+    event RewardPaid(address indexed user, uint256 reward);
 
     bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
 
@@ -64,7 +64,7 @@ contract StakeEventLogger is PermissionsEnumerable, Multicall{
         emit UnstakedTeam(user, leaderId, boostIds);
     }
 
-    function RewardPay(address user, uint256 payId, uint256 reward) external onlyRole(FACTORY_ROLE){
-        emit RewardPaid(user, payId, reward);
+    function RewardPay(address user, uint256 reward) external onlyRole(FACTORY_ROLE){
+        emit RewardPaid(user, reward);
     }
 }
