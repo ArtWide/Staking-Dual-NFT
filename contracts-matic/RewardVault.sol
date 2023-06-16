@@ -60,7 +60,7 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      * @param _payId.
      */
     function transferToken(address recipient, uint256 amount, uint256 _payId) external onlyRole(FACTORY_ROLE){
-        require(_payId + 1 == payId, "Incorrect payId");
+        require(_payId == payId + 1, "Incorrect payId");
         _acceptedToken.safeTransfer(recipient, amount);
         payId += 1;
 
