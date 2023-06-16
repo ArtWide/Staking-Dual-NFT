@@ -31,6 +31,8 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
     using SafeERC20 for IERC20;
     IERC20 private _acceptedToken;
 
+    uint256 private payId = 0;
+
     /**
      * @dev Initializes the contract by setting the acceptedToken and granting the DEFAULT_ADMIN_ROLE to the deployer.
      * @param acceptedToken The token that will be accepted and transferred as reward.
@@ -51,10 +53,13 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
     /**
      * @dev Allows the DEFAULT_ADMIN_ROLE to transfer tokens as rewards to a recipient.
      * @param recipient The address to which the tokens will be transferred.
-     * @param amount The amount of tokens to be transferred.
+     * @param amount The amount of tokens to be transferred.    
+     * @param _payId.
      */
-    function transferToken(address recipient, uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function transferToken(address recipient, uint256 amount, uint256 _payId) external onlyRole(DEFAULT_ADMIN_ROLE){
+        require(_payId == payId, "Invalid payId");
         _acceptedToken.safeTransfer(recipient, amount);
+        payId = payId + 1;
     }
 
     /**
@@ -71,5 +76,9 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      */
     function setRole(address _address) external onlyRole(DEFAULT_ADMIN_ROLE){
         _setupRole(DEFAULT_ADMIN_ROLE, _address);
+    }
+
+    function getPayId() external view returns (uint256) {
+        return payId;
     }
 }
