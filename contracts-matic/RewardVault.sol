@@ -30,7 +30,7 @@ import "@thirdweb-dev/contracts/extension/Multicall.sol";
 contract NTSRewardVault is PermissionsEnumerable, Multicall {
     using SafeERC20 for IERC20;
     IERC20 private _acceptedToken;
-    uint256 private payId = 0;
+    uint256 private payId;
     bytes32 private constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
 
     event RewardPaid(uint256 payId, address user, uint256 reward);
@@ -43,6 +43,7 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
         _acceptedToken = acceptedToken;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(FACTORY_ROLE, msg.sender);
+        payId = 0;
     }
 
     /**
@@ -73,5 +74,9 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
      */
     function getTokenBalance() public view returns (uint256) {
         return _acceptedToken.balanceOf(address(this));
+    }
+
+    function getPayId() external view returns (uint256) {
+        return payId;
     }
 }
