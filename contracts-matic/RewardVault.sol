@@ -76,6 +76,10 @@ contract NTSRewardVault is PermissionsEnumerable, Multicall {
         return _acceptedToken.balanceOf(address(this));
     }
 
+    function setPayId(uint256 _payId) external onlyRole(DEFAULT_ADMIN_ROLE){
+        payId = _payId;
+    }
+
     function getPayId() external view returns (uint256) {
         return payId;
     }
